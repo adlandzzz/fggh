@@ -1,0 +1,32 @@
+<!-- Скрипт для загрузки темы пользователя -->
+<script>
+    // Загрузка темы при загрузке страницы
+    async function loadTheme() {
+        try {
+            const response = await fetch('/api/user/settings');
+            if (response.ok) {
+                const settings = await response.json();
+                if (settings.theme) {
+                    applyTheme(settings.theme);
+                }
+            }
+        } catch (error) {
+            console.error('Ошибка загрузки темы:', error);
+        }
+    }
+
+    // Применение темы
+    function applyTheme(theme) {
+        if (theme === 'light') {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.classList.add('light');
+        } else {
+            document.documentElement.classList.remove('light');
+            document.documentElement.classList.add('dark');
+        }
+    }
+
+    // Загружаем тему при загрузке страницы
+    document.addEventListener('DOMContentLoaded', loadTheme);
+</script>
+

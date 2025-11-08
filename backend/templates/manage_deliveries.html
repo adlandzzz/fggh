@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TBGSOSAT CRM - Управление доставками</title>
+    <link rel="stylesheet" href="/css/old-style.css">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        .manage-deliveries-container {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .page-title {
+            font-size: 2.25rem;
+            font-weight: 900;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .search-filter-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-wrapper {
+            flex: 1;
+            min-width: 300px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.875rem 1rem 0.875rem 2.75rem;
+            background: hsl(var(--input));
+            border: 2px solid hsl(var(--border));
+            border-radius: calc(var(--radius) + 4px);
+            color: hsl(var(--foreground));
+            font-size: 0.9375rem;
+            transition: all 0.3s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: hsl(var(--primary));
+            box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 0.875rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: hsl(var(--muted-foreground));
+            font-size: 1.125rem;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 0.75rem 1.25rem;
+            border: 2px solid hsl(var(--border));
+            background: hsl(var(--background));
+            color: hsl(var(--foreground));
+            border-radius: calc(var(--radius) + 2px);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .filter-btn:hover {
+            background: hsl(var(--accent));
+            transform: translateY(-2px);
+        }
+
+        .filter-btn.active {
+            background: var(--gradient-primary);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .deliveries-table {
+            background: hsl(var(--card));
+            border: 2px solid hsl(var(--border));
+            border-radius: calc(var(--radius) + 8px);
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        .table-header {
+            background: linear-gradient(135deg, hsl(var(--muted) / 0.6), hsl(var(--muted) / 0.4));
+            padding: 1.25rem 1.5rem;
+            border-bottom: 2px solid hsl(var(--border));
+            display: grid;
+            grid-template-columns: 60px 1fr 150px 180px 200px 120px 100px 120px;
+            gap: 1rem;
+            font-weight: 800;
+            font-size: 0.875rem;
+            color: hsl(var(--foreground));
+            align-items: center;
+        }
+
+        .table-body {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .table-body::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .table-body::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .table-body::-webkit-scrollbar-thumb {
+            background: hsl(var(--muted-foreground) / 0.3);
+            border-radius: 4px;
+        }
+
+        .table-row {
+            display: grid;
+            grid-template-columns: 60px 1fr 150px 180px 200px 120px 100px 120px;
+            gap: 1rem;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid hsl(var(--border));
+            align-items: center;
+            transition: all 0.2s;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .table-row:hover {
+            background: hsl(var(--accent));
+        }
+
+        .table-row:last-child {
+            border-bottom: none;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .table-cell {
+            font-size: 0.9375rem;
+            color: hsl(var(--foreground));
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .table-cell.client-name {
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            padding: 0.5rem 0.875rem;
+            border-radius: calc(var(--radius) + 2px);
+            font-size: 0.8125rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .status-processing {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+
+        .status-picking {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+        }
+
+        .status-shipped {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+        }
+
+        .status-in_transit {
+            background: linear-gradient(135deg, #06b6d4, #0891b2);
+            color: white;
+        }
+
+        .status-delivered {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+
+        .status-cancelled {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .action-btn {
+            padding: 0.5rem 0.875rem;
+            border: 2px solid hsl(var(--border));
+            background: hsl(var(--background));
+            color: hsl(var(--foreground));
+            border-radius: calc(var(--radius));
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+        }
+
+        .action-btn:hover {
+            background: hsl(var(--accent));
+            transform: translateY(-1px);
+        }
+
+        .action-btn.edit {
+            background: hsl(var(--primary) / 0.1);
+            border-color: hsl(var(--primary) / 0.3);
+            color: hsl(var(--primary));
+        }
+
+        .action-btn.edit:hover {
+            background: hsl(var(--primary) / 0.2);
+        }
+
+        .action-btn.delete {
+            background: hsl(var(--destructive) / 0.1);
+            border-color: hsl(var(--destructive) / 0.3);
+            color: hsl(var(--destructive));
+        }
+
+        .action-btn.delete:hover {
+            background: hsl(var(--destructive) / 0.2);
+        }
+
+        .empty-state {
+            padding: 4rem 2rem;
+            text-align: center;
+            color: hsl(var(--muted-foreground));
+        }
+
+        .empty-state-icon {
+            font-size: 5rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        /* Модальное окно */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .modal-content {
+            background: hsl(var(--card));
+            border: 2px solid hsl(var(--border));
+            border-radius: calc(var(--radius) + 8px);
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid hsl(var(--border));
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: hsl(var(--muted-foreground));
+            transition: all 0.2s;
+            padding: 0.5rem;
+            border-radius: calc(var(--radius));
+        }
+
+        .modal-close:hover {
+            background: hsl(var(--accent));
+            color: hsl(var(--foreground));
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: hsl(var(--foreground));
+            font-size: 0.9375rem;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            background: hsl(var(--input));
+            border: 2px solid hsl(var(--border));
+            border-radius: calc(var(--radius) + 2px);
+            color: hsl(var(--foreground));
+            font-size: 0.9375rem;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: hsl(var(--primary));
+            box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 2px solid hsl(var(--border));
+        }
+
+        .btn-primary {
+            padding: 0.875rem 2rem;
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            border-radius: calc(var(--radius) + 2px);
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.9375rem;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-secondary {
+            padding: 0.875rem 2rem;
+            background: hsl(var(--muted));
+            color: hsl(var(--foreground));
+            border: 2px solid hsl(var(--border));
+            border-radius: calc(var(--radius) + 2px);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9375rem;
+            transition: all 0.3s;
+        }
+
+        .btn-secondary:hover {
+            background: hsl(var(--accent));
+            transform: translateY(-2px);
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10001;
+            padding: 1rem 1.5rem;
+            border-radius: calc(var(--radius));
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            animation: slideInRight 0.3s ease-out;
+            font-weight: 600;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .notification.success {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+
+        .notification.error {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+
+        .tracking-number {
+            font-family: 'Courier New', monospace;
+            font-weight: 700;
+            color: hsl(var(--primary));
+            background: hsl(var(--primary) / 0.1);
+            padding: 0.25rem 0.5rem;
+            border-radius: calc(var(--radius));
+            font-size: 0.8125rem;
+        }
+
+        .address-cell {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="/admin/dashboard" class="logo">TBGSOSAT CRM ADMIN</a>
+                <nav class="nav">
+                    <span style="color: var(--muted-foreground);">👑 {{ user.username }}</span>
+                    <a href="/admin/dashboard" class="nav-link">📊 Дашборд</a>
+                    <a href="/chats" class="nav-link">💬 Чаты</a>
+                    <a href="/shops" class="nav-link">🏪 Магазины</a>
+                    <a href="/managers" class="nav-link">👥 Менеджеры</a>
+                    <a href="/deliveries" class="nav-link">🚚 Доставки</a>
+                    <a href="/deliveries/manage" class="nav-link active">⚙️ Управление доставками</a>
+                    <a href="/analytics" class="nav-link">📊 Аналитика</a>
+                    <a href="/settings" class="nav-link">⚙️ Настройки</a>
+                    <a href="/logout" class="nav-link">🚪 Выход</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="manage-deliveries-container">
+            <div class="page-header">
+                <h1 class="page-title">⚙️ Управление доставками</h1>
+                <div class="header-actions">
+                    <button class="btn-primary" onclick="openAddModal()">
+                        ➕ Добавить доставку
+                    </button>
+                </div>
+            </div>
+
+            <div class="search-filter-bar">
+                <div class="search-wrapper">
+                    <span class="search-icon">🔍</span>
+                    <input 
+                        type="search" 
+                        id="search-input" 
+                        class="search-input" 
+                        placeholder="Поиск по клиенту, адресу, трек-номеру..."
+                        oninput="filterDeliveries()"
+                    >
+                </div>
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">📁 Все</button>
+                    <button class="filter-btn" data-filter="processing" onclick="setFilter('processing')">🔄 В обработке</button>
+                    <button class="filter-btn" data-filter="picking" onclick="setFilter('picking')">📦 Подбор</button>
+                    <button class="filter-btn" data-filter="shipped" onclick="setFilter('shipped')">📤 Отправлено</button>
+                    <button class="filter-btn" data-filter="in_transit" onclick="setFilter('in_transit')">🚚 В пути</button>
+                    <button class="filter-btn" data-filter="delivered" onclick="setFilter('delivered')">✅ Доставлено</button>
+                    <button class="filter-btn" data-filter="cancelled" onclick="setFilter('cancelled')">❌ Отменено</button>
+                </div>
+            </div>
+
+            <div class="deliveries-table">
+                <div class="table-header">
+                    <div>ID</div>
+                    <div>Клиент</div>
+                    <div>Телефон</div>
+                    <div>Адрес</div>
+                    <div>Трек-номер</div>
+                    <div>Статус</div>
+                    <div>Менеджер</div>
+                    <div>Действия</div>
+                </div>
+                <div class="table-body" id="deliveries-table-body">
+                    <!-- Доставки загружаются через JavaScript -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Модальное окно для добавления/редактирования -->
+    <div class="modal" id="delivery-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modal-title">Добавить доставку</h2>
+                <button class="modal-close" onclick="closeModal()">✕</button>
+            </div>
+            <form id="delivery-form" onsubmit="saveDelivery(event)">
+                <input type="hidden" id="delivery-id" name="id">
+                
+                <div class="form-group">
+                    <label class="form-label" for="chat-select">Чат</label>
+                    <select class="form-select" id="chat-select" name="chat_id">
+                        <option value="">Не привязан к чату</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="status-select">Статус *</label>
+                    <select class="form-select" id="status-select" name="status" required>
+                        <option value="processing">🔄 В обработке</option>
+                        <option value="picking">📦 Подбор</option>
+                        <option value="shipped">📤 Отправлено</option>
+                        <option value="in_transit">🚚 В пути</option>
+                        <option value="delivered">✅ Доставлено</option>
+                        <option value="cancelled">❌ Отменено</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="address-input">Адрес</label>
+                    <input 
+                        type="text" 
+                        class="form-input" 
+                        id="address-input" 
+                        name="address" 
+                        placeholder="Введите адрес доставки"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="tracking-input">Трек-номер</label>
+                    <input 
+                        type="text" 
+                        class="form-input" 
+                        id="tracking-input" 
+                        name="tracking_number" 
+                        placeholder="Введите трек-номер"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="notes-textarea">Примечания</label>
+                    <textarea 
+                        class="form-textarea" 
+                        id="notes-textarea" 
+                        name="notes" 
+                        placeholder="Дополнительная информация..."
+                    ></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal()">Отмена</button>
+                    <button type="submit" class="btn-primary">💾 Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let allDeliveries = [];
+        let filteredDeliveries = [];
+        let allChats = [];
+        let currentFilter = 'all';
+        let searchQuery = '';
+
+        const statusLabels = {
+            'processing': '🔄 В обработке',
+            'picking': '📦 Подбор',
+            'shipped': '📤 Отправлено',
+            'in_transit': '🚚 В пути',
+            'delivered': '✅ Доставлено',
+            'cancelled': '❌ Отменено'
+        };
+
+        // Загрузка данных
+        async function loadData() {
+            await Promise.all([loadDeliveries(), loadChats()]);
+        }
+
+        async function loadDeliveries() {
+            try {
+                const response = await fetch('/api/deliveries');
+                allDeliveries = await response.json();
+                filterDeliveries();
+            } catch (error) {
+                console.error('Ошибка загрузки доставок:', error);
+                showNotification('❌ Ошибка загрузки доставок', 'error');
+            }
+        }
+
+        async function loadChats() {
+            try {
+                const response = await fetch('/api/chats');
+                allChats = await response.json();
+                updateChatSelect();
+            } catch (error) {
+                console.error('Ошибка загрузки чатов:', error);
+            }
+        }
+
+        function updateChatSelect() {
+            const select = document.getElementById('chat-select');
+            if (!select) return;
+            
+            select.innerHTML = '<option value="">Выберите чат...</option>';
+            allChats.filter(chat => chat.status !== 'completed').forEach(chat => {
+                const option = document.createElement('option');
+                option.value = chat.id;
+                option.textContent = `${chat.client_name} - ${chat.client_phone} (${chat.shop_name})`;
+                select.appendChild(option);
+            });
+        }
+
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.filter === filter);
+            });
+            filterDeliveries();
+        }
+
+        function filterDeliveries() {
+            searchQuery = document.getElementById('search-input').value.toLowerCase().trim();
+            
+            let filtered = allDeliveries;
+            
+            if (currentFilter !== 'all') {
+                filtered = filtered.filter(d => d.delivery_status === currentFilter);
+            }
+            
+            if (searchQuery) {
+                filtered = filtered.filter(d => {
+                    const name = (d.client_name || '').toLowerCase();
+                    const phone = (d.client_phone || '').toLowerCase();
+                    const address = (d.address || '').toLowerCase();
+                    const tracking = (d.tracking_number || '').toLowerCase();
+                    const notes = (d.notes || '').toLowerCase();
+                    return name.includes(searchQuery) || 
+                           phone.includes(searchQuery) ||
+                           address.includes(searchQuery) ||
+                           tracking.includes(searchQuery) ||
+                           notes.includes(searchQuery);
+                });
+            }
+            
+            filteredDeliveries = filtered;
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('deliveries-table-body');
+            
+            if (filteredDeliveries.length === 0) {
+                tbody.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📦</div>
+                        <h3>Нет доставок</h3>
+                        <p>${searchQuery || currentFilter !== 'all' ? 'Попробуйте изменить фильтры' : 'Добавьте первую доставку'}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = filteredDeliveries.map((delivery, index) => {
+                const statusClass = `status-${delivery.delivery_status}`;
+                const statusLabel = statusLabels[delivery.delivery_status] || delivery.delivery_status;
+                const createdDate = new Date(delivery.created_at).toLocaleDateString('ru-RU', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+
+                return `
+                    <div class="table-row" style="animation-delay: ${index * 0.03}s;">
+                        <div class="table-cell">#${delivery.id}</div>
+                        <div class="table-cell client-name">${delivery.client_name || 'Без имени'}</div>
+                        <div class="table-cell">${delivery.client_phone || 'Нет телефона'}</div>
+                        <div class="table-cell address-cell" title="${delivery.address || ''}">${delivery.address || '—'}</div>
+                        <div class="table-cell">
+                            ${delivery.tracking_number ? `<span class="tracking-number">${delivery.tracking_number}</span>` : '—'}
+                        </div>
+                        <div class="table-cell">
+                            <span class="status-badge ${statusClass}">${statusLabel}</span>
+                        </div>
+                        <div class="table-cell">${delivery.manager_name || '—'}</div>
+                        <div class="table-cell">
+                            <div class="action-buttons">
+                                <button class="action-btn edit" onclick="openEditModal(${delivery.id})" title="Редактировать">
+                                    ✏️
+                                </button>
+                                <button class="action-btn delete" onclick="deleteDelivery(${delivery.id})" title="Удалить">
+                                    🗑️
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openAddModal() {
+            document.getElementById('modal-title').textContent = 'Добавить доставку';
+            document.getElementById('delivery-form').reset();
+            document.getElementById('delivery-id').value = '';
+            document.getElementById('delivery-modal').classList.add('active');
+        }
+
+        function openEditModal(deliveryId) {
+            const delivery = allDeliveries.find(d => d.id === deliveryId);
+            if (!delivery) return;
+
+            document.getElementById('modal-title').textContent = 'Редактировать доставку';
+            document.getElementById('delivery-id').value = delivery.id;
+            document.getElementById('chat-select').value = delivery.chat_id || '';
+            document.getElementById('status-select').value = delivery.delivery_status;
+            document.getElementById('address-input').value = delivery.address || '';
+            document.getElementById('tracking-input').value = delivery.tracking_number || '';
+            document.getElementById('notes-textarea').value = delivery.notes || '';
+            document.getElementById('delivery-modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('delivery-modal').classList.remove('active');
+        }
+
+        async function saveDelivery(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const deliveryId = formData.get('id');
+            const chatIdValue = formData.get('chat_id');
+            const data = {
+                status: formData.get('status'),
+                address: formData.get('address') || null,
+                tracking_number: formData.get('tracking_number') || null,
+                notes: formData.get('notes') || null
+            };
+            
+            if (chatIdValue) {
+                data.chat_id = parseInt(chatIdValue);
+            }
+
+            try {
+                let response;
+                if (deliveryId) {
+                    // Обновление
+                    response = await fetch(`/api/deliveries/${deliveryId}`, {
+                        method: 'PUT',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(data)
+                    });
+                } else {
+                    // Создание
+                    response = await fetch('/api/deliveries', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(data)
+                    });
+                }
+
+                if (response.ok) {
+                    showNotification(deliveryId ? '✅ Доставка обновлена' : '✅ Доставка создана', 'success');
+                    closeModal();
+                    await loadDeliveries();
+                } else {
+                    const error = await response.json();
+                    showNotification('❌ Ошибка: ' + (error.error || 'Не удалось сохранить'), 'error');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                showNotification('❌ Ошибка сохранения', 'error');
+            }
+        }
+
+        async function deleteDelivery(deliveryId) {
+            if (!confirm('Удалить эту доставку? Это действие нельзя отменить.')) return;
+
+            try {
+                const response = await fetch(`/api/deliveries/${deliveryId}`, {
+                    method: 'DELETE',
+                    headers: {'Content-Type': 'application/json'}
+                });
+
+                if (response.ok) {
+                    showNotification('✅ Доставка удалена', 'success');
+                    await loadDeliveries();
+                } else {
+                    const error = await response.json();
+                    showNotification('❌ Ошибка: ' + (error.error || 'Не удалось удалить'), 'error');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                showNotification('❌ Ошибка удаления', 'error');
+            }
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'fadeOut 0.3s ease-out';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Закрытие модального окна при клике вне его
+        document.getElementById('delivery-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            setInterval(loadDeliveries, 30000);
+        });
+    </script>
+</body>
+</html>
+

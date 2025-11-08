@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TBGSOSAT - Управление заказами</title>
+    <link rel="stylesheet" href="/static/css/old-style.css">
+    <style>
+        .orders-grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .order-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .order-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+
+        .order-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .status-in_progress { background: #dbeafe; color: #1e40af; }
+        .status-completed { background: #d1fae5; color: #065f46; }
+
+        .order-price {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="/" class="logo">TBGSOSAT ORDERS</a>
+                <nav class="nav">
+                    <a href="/" class="nav-link">🏠 Главная</a>
+                    <a href="/dashboard" class="nav-link">📊 Дашборд</a>
+                    <a href="/admin" class="nav-link">⚙️ Админка</a>
+                    <a href="/orders" class="nav-link active">📦 Заказы</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="card-header" style="margin-bottom: 2rem;">
+                <h1 class="card-title">📦 Управление заказами</h1>
+                <button class="btn" onclick="showAddOrderModal()">+ Новый заказ</button>
+            </div>
+
+            <div class="stats-grid" style="margin-bottom: 2rem;">
+                <div class="stat-card">
+                    <div class="stat-icon">📋</div>
+                    <div class="stat-value" id="total-orders">0</div>
+                    <div class="stat-label">Всего заказов</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⏳</div>
+                    <div class="stat-value" id="pending-orders">0</div>
+                    <div class="stat-label">В ожидании</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-value" id="completed-orders">0</div>
+                    <div class="stat-label">Завершено</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-value" id="total-revenue">0₽</div>
+                    <div class="stat-label">Выручка</div>
+                </div>
+            </div>
+
+            <div class="orders-grid" id="orders-container">
+                <!-- Заказы загружаются через JavaScript -->
+            </div>
+        </div>
+    </main>
+
+    <script>
+        async function loadOrders() {
+            try {
+                const response = await fetch('/api/orders/list');
+                const orders = await response.json();
+
+                // Обновляем статистику
+                document.getElementById('total-orders').textContent = orders.length;
+                document.getElementById('pending-orders').textContent = orders.filter(o => o.status === 'pending').length;
+                document.getElementById('completed-orders').textContent = orders.filter(o => o.status === 'completed').length;
+
+                const totalRevenue = orders
+                    .filter(o => o.status === 'completed')
+                    .reduce((sum, order) => sum + (order.price || 0), 0);
+                document.getElementById('total-revenue').textContent = totalRevenue + '₽';
+
+                // Отображаем заказы
+                const container = document.getElementById('orders-container');
+                container.innerHTML = orders.map(order => `
+                    <div class="order-card">
+                        <div class="order-header">
+                            <div>
+                                <h3 style="margin: 0 0 0.5rem 0;">${order.title}</h3>
+                                <p style="color: var(--muted-foreground); margin: 0;">${order.description}</p>
+                            </div>
+                            <div style="text-align: right;">
+                                <div class="order-status status-${order.status}">
+                                    ${getStatusText(order.status)}
+                                </div>
+                                <div class="order-price">${order.price || 0}₽</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <small style="color: var(--muted-foreground);">
+                                    Клиент: ${order.username}<br>
+                                    Создан: ${new Date(order.created_at).toLocaleDateString()}
+                                </small>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="btn btn-outline" onclick="editOrder(${order.id})">✏️</button>
+                                <button class="btn btn-outline" onclick="viewOrder(${order.id})">👁️</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Ошибка загрузки заказов:', error);
+            }
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                'pending': 'В ожидании',
+                'in_progress': 'В работе',
+                'completed': 'Завершено'
+            };
+            return statusMap[status] || status;
+        }
+
+        function showAddOrderModal() {
+            alert('Форма добавления заказа будет здесь');
+        }
+
+        function editOrder(orderId) {
+            alert(`Редактирование заказа ID: ${orderId}`);
+        }
+
+        function viewOrder(orderId) {
+            alert(`Просмотр заказа ID: ${orderId}`);
+        }
+
+        // Загружаем заказы при старте
+        document.addEventListener('DOMContentLoaded', loadOrders);
+    </script>
+</body>
+</html>

@@ -1,0 +1,1951 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TBGSOSAT CRM - Чаты</title>
+    <link rel="stylesheet" href="/css/old-style.css">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        .chats-page {
+            height: calc(100vh - 80px);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: hsl(var(--background));
+        }
+
+        /* Основной layout */
+        .chats-container {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 0;
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        /* Боковая панель */
+        .sidebar {
+            background: hsl(var(--card));
+            border-right: 1px solid hsl(var(--border));
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .sidebar-top {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid hsl(var(--border));
+            background: hsl(var(--card));
+            flex-shrink: 0;
+        }
+
+        .sidebar-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            margin: 0 0 0.75rem 0;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 0.75rem;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.5rem 0.75rem 0.5rem 2.5rem;
+            background: hsl(var(--input));
+            border: 1px solid hsl(var(--border));
+            border-radius: calc(var(--radius));
+            color: hsl(var(--foreground));
+            font-size: 0.875rem;
+            transition: all 0.3s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: hsl(var(--primary));
+            box-shadow: 0 0 0 2px hsl(var(--primary) / 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: hsl(var(--muted-foreground));
+            font-size: 1rem;
+        }
+
+        .filters-row {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-chip {
+            padding: 0.375rem 0.625rem;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--background));
+            color: hsl(var(--foreground));
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.75rem;
+            font-weight: 600;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .filter-chip:hover {
+            background: hsl(var(--accent));
+            transform: translateY(-1px);
+        }
+
+        .filter-chip.active {
+            background: var(--gradient-primary);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+        }
+
+        .filter-chip.pool.active {
+            background: linear-gradient(135deg, #10b981, #059669);
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        }
+
+        .filter-chip.archive {
+            margin-top: 0.5rem;
+            width: 100%;
+            justify-content: center;
+            background: hsl(var(--muted));
+            color: hsl(var(--muted-foreground));
+        }
+
+        .filter-chip.archive.active {
+            background: hsl(var(--muted-foreground));
+            color: white;
+        }
+
+        /* Список чатов */
+        .chats-scroll {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 0.5rem;
+            min-height: 0;
+        }
+
+        .chats-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chats-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chats-scroll::-webkit-scrollbar-thumb {
+            background: hsl(var(--muted-foreground) / 0.3);
+            border-radius: 3px;
+        }
+
+        .chats-scroll::-webkit-scrollbar-thumb:hover {
+            background: hsl(var(--muted-foreground) / 0.5);
+        }
+
+        .chat-card {
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: calc(var(--radius) + 2px);
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .chat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+            border-color: hsl(var(--primary) / 0.5);
+        }
+
+        .chat-card.active {
+            background: var(--gradient-primary);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4), 0 4px 12px rgba(59, 130, 246, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .chat-card.pool {
+            border-left: 4px solid #10b981;
+            background: linear-gradient(90deg, rgba(16, 185, 129, 0.12) 0%, hsl(var(--card)) 4%);
+            position: relative;
+            animation: pulse-pool 2s ease-in-out infinite;
+        }
+
+        .chat-card.pool.urgent {
+            border-left: 4px solid #ef4444;
+            background: linear-gradient(90deg, rgba(239, 68, 68, 0.15) 0%, hsl(var(--card)) 4%);
+            animation: pulse-urgent 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse-pool {
+            0%, 100% { box-shadow: 0 2px 8px rgba(16, 185, 129, 0.1); }
+            50% { box-shadow: 0 2px 12px rgba(16, 185, 129, 0.2); }
+        }
+
+        @keyframes pulse-urgent {
+            0%, 100% { box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2); }
+            50% { box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4); }
+        }
+
+        .chat-card.urgent {
+            border-left: 4px solid #ef4444;
+            background: linear-gradient(90deg, rgba(239, 68, 68, 0.08) 0%, hsl(var(--card)) 4%);
+        }
+
+        .chat-card.new {
+            border-left: 4px solid #f59e0b;
+            background: linear-gradient(90deg, rgba(245, 158, 11, 0.08) 0%, hsl(var(--card)) 4%);
+        }
+
+        .chat-card.delivery {
+            border-left: 4px solid #8b5cf6;
+            background: linear-gradient(90deg, rgba(139, 92, 246, 0.08) 0%, hsl(var(--card)) 4%);
+        }
+
+        .chat-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 0.5rem;
+        }
+
+        .chat-card-title {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .chat-client-name {
+            font-weight: 700;
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-shop-name {
+            font-size: 0.6875rem;
+            color: hsl(var(--muted-foreground));
+            background: hsl(var(--muted));
+            padding: 0.1875rem 0.5rem;
+            border-radius: 10px;
+            display: inline-block;
+            font-weight: 500;
+        }
+
+        .chat-card.active .chat-shop-name {
+            background: rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .chat-badges {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .pool-badge {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 0.25rem 0.625rem;
+            border-radius: 12px;
+            font-size: 0.6875rem;
+            font-weight: 700;
+        }
+
+        .unread-count {
+            background: var(--gradient-primary);
+            color: white;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.6875rem;
+            font-weight: 700;
+            box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);
+        }
+
+        .chat-preview {
+            font-size: 0.75rem;
+            color: hsl(var(--muted-foreground));
+            line-height: 1.4;
+            margin-bottom: 0.5rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .chat-card.active .chat-preview {
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        .chat-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid hsl(var(--border));
+        }
+
+        .chat-card.active .chat-footer {
+            border-top-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .priority-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.6875rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .priority-urgent {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+
+        .priority-new {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+
+        .priority-active {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+
+        .priority-delivery {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+        }
+
+        .response-time {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: hsl(var(--muted-foreground));
+        }
+
+        .response-time.urgent {
+            color: #ef4444;
+        }
+
+        .response-time.warning {
+            color: #f59e0b;
+        }
+
+        .response-time.normal {
+            color: #10b981;
+        }
+
+        .chat-card.active .response-time {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .pool-action-btn {
+            width: 100%;
+            padding: 0.625rem;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            border-radius: calc(var(--radius));
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.8125rem;
+            transition: all 0.2s;
+            margin-top: 0.75rem;
+        }
+
+        .pool-action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        /* Быстрые действия для пула */
+        .pool-quick-actions {
+            display: flex;
+            gap: 0.375rem;
+            margin-top: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .quick-action-btn {
+            flex: 1;
+            min-width: 0;
+            padding: 0.375rem 0.5rem;
+            background: hsl(var(--muted));
+            color: hsl(var(--foreground));
+            border: 1px solid hsl(var(--border));
+            border-radius: calc(var(--radius));
+            font-weight: 600;
+            font-size: 0.6875rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+            white-space: nowrap;
+        }
+
+        .quick-action-btn:hover {
+            background: hsl(var(--accent));
+            border-color: hsl(var(--primary));
+            transform: translateY(-1px);
+        }
+
+        .quick-action-btn.primary {
+            background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.8));
+            color: white;
+            border-color: transparent;
+        }
+
+        .quick-action-btn.primary:hover {
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        .quick-action-btn.danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border-color: transparent;
+        }
+
+        .quick-action-btn.danger:hover {
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+        }
+
+        .quick-action-btn.success {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border-color: transparent;
+        }
+
+        .quick-action-btn.success:hover {
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        .return-action-btn {
+            width: 100%;
+            padding: 0.625rem;
+            background: hsl(var(--warning));
+            color: white;
+            border: none;
+            border-radius: calc(var(--radius));
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.8125rem;
+            transition: all 0.2s;
+            margin-top: 0.75rem;
+        }
+
+        .return-action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+        }
+
+        /* Основная область чата */
+        .chat-main {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background: hsl(var(--background));
+            overflow: hidden;
+        }
+
+        .chat-window {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header-bar {
+            padding: 0.75rem 1rem;
+            background: hsl(var(--card));
+            border-bottom: 1px solid hsl(var(--border));
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .chat-header-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .chat-header-name {
+            font-size: 1.125rem;
+            font-weight: 800;
+            margin: 0 0 0.25rem 0;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-header-details {
+            display: flex;
+            gap: 0.75rem;
+            font-size: 0.75rem;
+            color: hsl(var(--muted-foreground));
+            flex-wrap: wrap;
+        }
+
+        .chat-header-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+
+        .header-action-btn {
+            padding: 0.5rem 0.875rem;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--background));
+            color: hsl(var(--foreground));
+            border-radius: calc(var(--radius));
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+        }
+
+        .header-action-btn:hover {
+            background: hsl(var(--accent));
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-action-btn.primary {
+            background: var(--gradient-primary);
+            color: white;
+            border-color: transparent;
+        }
+
+        .header-action-btn.primary:hover {
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        .messages-view {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 0.75rem 1rem;
+            background: hsl(var(--background));
+            min-height: 0;
+            scroll-behavior: smooth;
+        }
+
+        .messages-view::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .messages-view::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .messages-view::-webkit-scrollbar-thumb {
+            background: hsl(var(--muted-foreground) / 0.3);
+            border-radius: 4px;
+        }
+
+        .messages-view::-webkit-scrollbar-thumb:hover {
+            background: hsl(var(--muted-foreground) / 0.5);
+        }
+
+        .message-row {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 1.25rem;
+            animation: messageAppear 0.3s ease-out;
+        }
+
+        @keyframes messageAppear {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-row.incoming {
+            align-items: flex-start;
+        }
+
+        .message-row.outgoing {
+            align-items: flex-end;
+        }
+
+        .message-author {
+            font-size: 0.75rem;
+            color: hsl(var(--muted-foreground));
+            margin-bottom: 0.375rem;
+            padding: 0 0.75rem;
+            font-weight: 600;
+        }
+
+        .message-wrapper {
+            max-width: 70%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message-bubble {
+            padding: 1rem 1.25rem;
+            border-radius: calc(var(--radius) + 6px);
+            font-size: 0.9375rem;
+            line-height: 1.6;
+            word-wrap: break-word;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .message-row.incoming .message-bubble {
+            background: hsl(var(--muted));
+            color: hsl(var(--foreground));
+            border-bottom-left-radius: 6px;
+        }
+
+        .message-row.outgoing .message-bubble {
+            background: var(--gradient-primary);
+            color: white;
+            border-bottom-right-radius: 6px;
+        }
+
+        .message-time {
+            font-size: 0.6875rem;
+            color: hsl(var(--muted-foreground));
+            margin-top: 0.5rem;
+            padding: 0 0.75rem;
+            opacity: 0.7;
+        }
+
+        .input-section {
+            padding: 1.5rem 2rem;
+            background: hsl(var(--card));
+            border-top: 2px solid hsl(var(--border));
+            flex-shrink: 0;
+            box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .quick-actions-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.875rem;
+            flex-wrap: wrap;
+        }
+
+        .quick-action {
+            padding: 0.5rem 0.875rem;
+            background: hsl(var(--muted));
+            border: 1px solid hsl(var(--border));
+            border-radius: calc(var(--radius));
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: hsl(var(--foreground));
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+        }
+
+        .quick-action:hover {
+            background: hsl(var(--accent));
+            transform: translateY(-1px);
+        }
+
+        .input-row {
+            display: flex;
+            gap: 0.875rem;
+            align-items: flex-end;
+        }
+
+        .message-field {
+            flex: 1;
+            padding: 1rem 1.25rem;
+            background: hsl(var(--input));
+            border: 2px solid hsl(var(--border));
+            border-radius: calc(var(--radius) + 4px);
+            color: hsl(var(--foreground));
+            font-size: 0.9375rem;
+            resize: none;
+            min-height: 52px;
+            max-height: 140px;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        .message-field:focus {
+            outline: none;
+            border-color: hsl(var(--primary));
+            box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
+        }
+
+        .send-button {
+            padding: 1rem 2rem;
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            border-radius: calc(var(--radius) + 4px);
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.9375rem;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .send-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+        }
+
+        .send-button:active {
+            transform: translateY(0);
+        }
+
+        .empty-chat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 3rem;
+            text-align: center;
+            color: hsl(var(--muted-foreground));
+        }
+
+        .empty-chat-icon {
+            font-size: 5rem;
+            margin-bottom: 1.5rem;
+            opacity: 0.3;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .empty-chat h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0 0 0.5rem 0;
+            color: hsl(var(--foreground));
+        }
+
+        .empty-chat p {
+            font-size: 1rem;
+            opacity: 0.8;
+            margin: 0;
+        }
+
+        .empty-list {
+            padding: 3rem 1.5rem;
+            text-align: center;
+            color: hsl(var(--muted-foreground));
+        }
+
+        .empty-list-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+
+        .quick-replies-menu {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            right: 0;
+            background: hsl(var(--card));
+            border: 2px solid hsl(var(--border));
+            border-radius: calc(var(--radius) + 8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+            z-index: 1000;
+            display: none;
+            margin-bottom: 0.875rem;
+            max-height: 450px;
+            overflow: hidden;
+            backdrop-filter: blur(20px);
+        }
+
+        .quick-replies-menu.active {
+            display: flex;
+            flex-direction: column;
+            animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .quick-replies-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 2px solid hsl(var(--border));
+            background: linear-gradient(135deg, hsl(var(--muted) / 0.5), hsl(var(--muted) / 0.3));
+            position: relative;
+        }
+
+        .quick-replies-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.3), transparent);
+        }
+
+        .quick-replies-title {
+            font-weight: 800;
+            font-size: 1.125rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .quick-replies-body {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            max-height: 350px;
+            padding: 0.5rem;
+        }
+
+        .quick-replies-body::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .quick-replies-body::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .quick-replies-body::-webkit-scrollbar-thumb {
+            background: hsl(var(--muted-foreground) / 0.3);
+            border-radius: 3px;
+        }
+
+        .quick-replies-body::-webkit-scrollbar-thumb:hover {
+            background: hsl(var(--muted-foreground) / 0.5);
+        }
+
+        .quick-reply-item {
+            padding: 1rem 1.25rem;
+            margin: 0.5rem;
+            border: 2px solid hsl(var(--border));
+            border-radius: calc(var(--radius) + 4px);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: hsl(var(--card));
+            position: relative;
+            overflow: hidden;
+        }
+
+        .quick-reply-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .quick-reply-item:hover {
+            background: hsl(var(--accent));
+            border-color: hsl(var(--primary) / 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .quick-reply-item:hover::before {
+            left: 100%;
+        }
+
+        .quick-reply-shortcut {
+            background: var(--gradient-primary);
+            color: white;
+            padding: 0.625rem 1rem;
+            border-radius: calc(var(--radius) + 2px);
+            font-weight: 800;
+            font-size: 0.8125rem;
+            font-family: 'Courier New', monospace;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .quick-reply-shortcut::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .quick-reply-item:hover .quick-reply-shortcut::before {
+            left: 100%;
+        }
+
+        .quick-reply-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .quick-reply-text {
+            font-size: 0.9375rem;
+            color: hsl(var(--foreground));
+            line-height: 1.6;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .quick-reply-meta {
+            font-size: 0.75rem;
+            color: hsl(var(--muted-foreground));
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .quick-reply-send {
+            padding: 0.75rem 1.25rem;
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            border-radius: calc(var(--radius) + 2px);
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.875rem;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .quick-reply-send::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
+        }
+
+        .quick-reply-send:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+        }
+
+        .quick-reply-send:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .quick-reply-send:active {
+            transform: translateY(0);
+        }
+
+        .quick-replies-footer {
+            padding: 1rem 1.5rem;
+            border-top: 2px solid hsl(var(--border));
+            background: linear-gradient(135deg, hsl(var(--muted) / 0.5), hsl(var(--muted) / 0.3));
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8125rem;
+            color: hsl(var(--muted-foreground));
+            font-weight: 600;
+        }
+
+        .quick-replies-empty {
+            padding: 3rem 2rem;
+            text-align: center;
+            color: hsl(var(--muted-foreground));
+        }
+
+        .quick-replies-empty-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .quick-replies-empty-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: hsl(var(--foreground));
+            margin-bottom: 0.5rem;
+        }
+
+        .quick-replies-empty-link {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--gradient-primary);
+            color: white;
+            border-radius: calc(var(--radius));
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.875rem;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .quick-replies-empty-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="/{% if user.role == 'admin' %}admin/dashboard{% else %}manager/dashboard{% endif %}" class="logo">
+                    TBGSOSAT CRM {% if user.role == 'admin' %}ADMIN{% else %}MANAGER{% endif %}
+                </a>
+                <nav class="nav">
+                    <span style="color: var(--muted-foreground);">
+                        {% if user.role == 'admin' %}👑{% else %}👨‍💼{% endif %} {{ user.username }}
+                    </span>
+                    <a href="/{% if user.role == 'admin' %}admin/dashboard{% else %}manager/dashboard{% endif %}" class="nav-link">📊 Дашборд</a>
+                    <a href="/chats" class="nav-link active">💬 Чаты</a>
+                    {% if user.role == 'admin' %}
+                    <a href="/shops" class="nav-link">🏪 Магазины</a>
+                    {% endif %}
+                    <a href="/deliveries" class="nav-link">🚚 Доставки</a>
+                    <a href="/quick-replies" class="nav-link">⚡ Быстрые ответы</a>
+                    {% if user.role == 'admin' %}
+                    <a href="/analytics" class="nav-link">📊 Аналитика</a>
+                    <a href="/settings" class="nav-link">⚙️ Настройки</a>
+                    {% endif %}
+                    <a href="/logout" class="nav-link">🚪 Выход</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content" style="padding: 0;">
+        <div class="chats-page">
+            <div class="chats-container">
+                <!-- Боковая панель -->
+                <div class="sidebar">
+                    <div class="sidebar-top">
+                        <h2 class="sidebar-title">💬 Чаты</h2>
+                        
+                        <div class="search-box">
+                            <span class="search-icon">🔍</span>
+                            <input 
+                                type="search" 
+                                id="chat-search" 
+                                class="search-input" 
+                                placeholder="Поиск по чатам..."
+                                oninput="searchChats(this.value)"
+                            >
+                        </div>
+
+                        <div class="filters-row">
+                            <button class="filter-chip active" data-sort="all">📁 Все</button>
+                            <button class="filter-chip" data-sort="my">👤 Мои чаты <span id="my-chats-count">(0)</span></button>
+                            <button class="filter-chip pool" data-sort="pool" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.08)); border-color: #10b981; font-weight: 700;">
+                                🌊 Пул <span id="pool-count">(0)</span>
+                            </button>
+                            <button class="filter-chip" data-sort="urgent">🔥 Срочные</button>
+                            <button class="filter-chip" data-sort="new">🆕 Новые</button>
+                            <button class="filter-chip archive" data-sort="completed">📦 Архив <span id="archive-count">(0)</span></button>
+                        </div>
+                    </div>
+
+                    <div class="chats-scroll" id="chats-list">
+                        <!-- Чаты загружаются через JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Основная область чата -->
+                <div class="chat-main">
+                    <div class="chat-window" id="chat-window">
+                        <div class="empty-chat" id="empty-chat">
+                            <div class="empty-chat-icon">💬</div>
+                            <h3>Выберите чат</h3>
+                            <p>Выберите чат из списка слева, чтобы начать общение</p>
+                        </div>
+
+                        <div id="chat-content" style="display: none; flex-direction: column; height: 100%;">
+                            <div class="chat-header-bar">
+                                <div class="chat-header-info">
+                                    <div class="chat-header-name" id="chat-client-name">Клиент</div>
+                                    <div class="chat-header-details" id="chat-header-details">
+                                        <span>📞 Телефон</span>
+                                        <span>•</span>
+                                        <span>🏪 Магазин</span>
+                                    </div>
+                                </div>
+                                <div class="chat-header-actions" id="chat-header-actions">
+                                    <!-- Кнопки действий загружаются через JavaScript -->
+                                </div>
+                            </div>
+
+                            <div class="messages-view" id="messages-container">
+                                <!-- Сообщения загружаются через JavaScript -->
+                            </div>
+
+                            <div class="input-section">
+                                <div class="quick-actions-row">
+                                    <button class="quick-action" onclick="showQuickRepliesMenu()">
+                                        ⚡ Быстрые ответы
+                                        <span id="quick-replies-count"></span>
+                                    </button>
+                                    <a href="/quick-replies" class="quick-action">➕ Управление</a>
+                                </div>
+                                <div class="input-row">
+                                    <textarea 
+                                        id="message-text" 
+                                        class="message-field" 
+                                        placeholder="Введите сообщение..."
+                                        rows="1"
+                                    ></textarea>
+                                    <button class="send-button" onclick="sendMessage()">
+                                        <span>📨</span>
+                                        <span>Отправить</span>
+                                    </button>
+                                </div>
+                                <div class="quick-replies-menu" id="quick-replies-menu">
+                                    <div class="quick-replies-header">
+                                        <div class="quick-replies-title">
+                                            <span>⚡</span>
+                                            <span>Быстрые ответы</span>
+                                        </div>
+                                    </div>
+                                    <div class="quick-replies-body" id="quick-replies-list">
+                                        <!-- Быстрые ответы загружаются через JavaScript -->
+                                    </div>
+                                    <div class="quick-replies-footer">
+                                        <span>Всего: <strong style="color: hsl(var(--primary));"><span id="quick-replies-total">0</span></strong></span>
+                                        <span>💡 Клик для вставки • 📤 Кнопка для отправки</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let currentChatId = null;
+        let allChats = [];
+        let filteredChats = [];
+        let currentSort = 'all';
+        let searchQuery = '';
+        let autoRefreshInterval = null;
+        let messagesAutoRefreshInterval = null;
+        let quickRepliesCache = null;
+        let quickRepliesCacheTime = 0;
+        const CACHE_DURATION = 60000;
+        const currentUsername = '{{ user.username if user else "" }}';
+
+        // Загрузка чатов
+        async function loadChats() {
+            try {
+                const response = await fetch('/api/chats');
+                allChats = await response.json();
+                
+                const completedCount = allChats.filter(chat => chat.status === 'completed').length;
+                const poolCount = allChats.filter(chat => chat.status !== 'completed' && !chat.assigned_manager_id).length;
+                const myChatsCount = allChats.filter(chat => 
+                    chat.status !== 'completed' && 
+                    chat.assigned_manager_id && 
+                    chat.assigned_manager_name === currentUsername
+                ).length;
+                
+                document.getElementById('archive-count').textContent = `(${completedCount})`;
+                document.getElementById('pool-count').textContent = `(${poolCount})`;
+                document.getElementById('my-chats-count').textContent = `(${myChatsCount})`;
+                
+                applySort(currentSort);
+            } catch (error) {
+                console.error('Ошибка загрузки чатов:', error);
+            }
+        }
+
+        // Поиск
+        function searchChats(query) {
+            searchQuery = query.toLowerCase().trim();
+            applySort(currentSort);
+        }
+
+        // Применение сортировки и фильтрации
+        function applySort(sort) {
+            currentSort = sort;
+            let baseChats = [];
+            
+            // Фильтрация по статусу
+            if (sort === 'completed') {
+                baseChats = allChats.filter(chat => chat.status === 'completed');
+            } else {
+                baseChats = allChats.filter(chat => chat.status !== 'completed');
+            }
+
+            // Дополнительная фильтрация
+            if (sort === 'my') {
+                baseChats = baseChats.filter(chat => 
+                    chat.assigned_manager_id && chat.assigned_manager_name === currentUsername
+                );
+            } else if (sort === 'pool') {
+                baseChats = baseChats.filter(chat => !chat.assigned_manager_id);
+            }
+
+            // Поиск
+            if (searchQuery) {
+                baseChats = baseChats.filter(chat => {
+                    const name = (chat.client_name || '').toLowerCase();
+                    const phone = (chat.client_phone || '').toLowerCase();
+                    const message = (chat.last_message || '').toLowerCase();
+                    const shop = (chat.shop_name || '').toLowerCase();
+                    return name.includes(searchQuery) || 
+                           phone.includes(searchQuery) || 
+                           message.includes(searchQuery) ||
+                           shop.includes(searchQuery);
+                });
+            }
+
+            // Сортировка (улучшенная для пула)
+            filteredChats = baseChats.sort((a, b) => {
+                if (sort === 'pool') {
+                    // Для пула: срочные первыми, затем по времени ответа (дольше без ответа = выше)
+                    if (a.priority === 'urgent' && b.priority !== 'urgent') return -1;
+                    if (a.priority !== 'urgent' && b.priority === 'urgent') return 1;
+                    // Срочные сортируем по времени ответа (больше = выше)
+                    if (a.priority === 'urgent' && b.priority === 'urgent') {
+                        return (b.response_timer || 0) - (a.response_timer || 0);
+                    }
+                    // Остальные: сначала новые, потом по времени ответа
+                    if (a.priority === 'new' && b.priority !== 'new') return -1;
+                    if (a.priority !== 'new' && b.priority === 'new') return 1;
+                    // По времени ответа (дольше без ответа = выше в списке)
+                    return (b.response_timer || 0) - (a.response_timer || 0);
+                } else if (sort === 'urgent') {
+                    if (a.priority === 'urgent' && b.priority !== 'urgent') return -1;
+                    if (a.priority !== 'urgent' && b.priority === 'urgent') return 1;
+                    if (a.priority === 'new' && b.priority !== 'new') return -1;
+                    if (a.priority !== 'new' && b.priority === 'new') return 1;
+                    return (b.response_timer || 0) - (a.response_timer || 0);
+                } else if (sort === 'new') {
+                    if (a.priority === 'new' && b.priority !== 'new') return -1;
+                    if (a.priority !== 'new' && b.priority === 'new') return 1;
+                    return (b.response_timer || 0) - (a.response_timer || 0);
+                } else if (sort === 'my') {
+                    return (b.response_timer || 0) - (a.response_timer || 0);
+                } else {
+                    // Общая сортировка: срочные -> новые -> по времени ответа
+                    if (a.priority === 'urgent' && b.priority !== 'urgent') return -1;
+                    if (a.priority !== 'urgent' && b.priority === 'urgent') return 1;
+                    if (a.priority === 'new' && b.priority !== 'new') return -1;
+                    if (a.priority !== 'new' && b.priority === 'new') return 1;
+                    return (b.response_timer || 0) - (a.response_timer || 0);
+                }
+            });
+
+            renderChatsList();
+            document.querySelectorAll('.filter-chip').forEach(chip => {
+                chip.classList.toggle('active', chip.dataset.sort === sort);
+            });
+        }
+
+        // Отрисовка списка чатов
+        function renderChatsList() {
+            const container = document.getElementById('chats-list');
+
+            if (filteredChats.length === 0) {
+                const emptyMessage = currentSort === 'completed' 
+                    ? '<h3>Архив пуст</h3><p>Завершенных чатов пока нет</p>'
+                    : currentSort === 'pool'
+                    ? '<h3>Пул пуст</h3><p>Нет чатов в общем пуле</p>'
+                    : currentSort === 'my'
+                    ? '<h3>Нет ваших чатов</h3><p>Возьмите чаты из пула</p>'
+                    : searchQuery
+                    ? '<h3>Ничего не найдено</h3><p>Попробуйте изменить запрос</p>'
+                    : '<h3>Чатов нет</h3><p>Нет чатов по выбранной сортировке</p>';
+                
+                const icon = currentSort === 'completed' ? '📦' : currentSort === 'pool' ? '🌊' : currentSort === 'my' ? '👤' : searchQuery ? '🔍' : '😴';
+                
+                container.innerHTML = `
+                    <div class="empty-list">
+                        <div class="empty-list-icon">${icon}</div>
+                        ${emptyMessage}
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filteredChats.map((chat, index) => {
+                const isCompleted = chat.status === 'completed';
+                const isInPool = !chat.assigned_manager_id && !isCompleted;
+                const isMyChat = chat.assigned_manager_id && chat.assigned_manager_name === currentUsername;
+                const priorityClass = `priority-${chat.priority}`;
+                const timerClass = getTimerClass(chat.response_timer);
+                const timerText = formatTimer(chat.response_timer);
+                // Для пула добавляем класс urgent, если приоритет срочный
+                const poolUrgentClass = (isInPool && chat.priority === 'urgent') ? 'urgent' : '';
+                const cardClass = `chat-card ${chat.priority} ${currentChatId === chat.id ? 'active' : ''} ${isInPool ? 'pool ' + poolUrgentClass : ''}`.trim();
+
+                return `
+                    <div class="${cardClass}" onclick="selectChat(${chat.id})" style="animation-delay: ${index * 0.03}s;">
+                        <div class="chat-card-header">
+                            <div class="chat-card-title">
+                                <div class="chat-client-name">${chat.client_name}</div>
+                                <div class="chat-shop-name">${chat.shop_name}</div>
+                            </div>
+                            <div class="chat-badges">
+                                ${isInPool ? '<span class="pool-badge">🌊 ПУЛ</span>' : ''}
+                                ${chat.unread_count > 0 ? `<span class="unread-count">${chat.unread_count}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="chat-preview">${chat.last_message || 'Нет сообщений'}</div>
+                        <div class="chat-footer">
+                            ${isCompleted ? 
+                                '<span class="priority-tag priority-completed">📦 ЗАВЕРШЕН</span>' :
+                                `<span class="priority-tag ${priorityClass}">${getPriorityIcon(chat.priority)} ${getPriorityText(chat.priority)}</span>`
+                            }
+                            ${!isCompleted ? `<span class="response-time ${timerClass}">${timerText}</span>` : ''}
+                        </div>
+                        ${isInPool ? `
+                            <div class="pool-quick-actions">
+                                <button class="quick-action-btn success" onclick="event.stopPropagation(); takeChatFromPool(${chat.id})" title="Взять чат себе">
+                                    📥 Взять
+                                </button>
+                                <button class="quick-action-btn primary" onclick="event.stopPropagation(); takeAndMoveToDelivery(${chat.id})" title="Взять и перевести в доставку">
+                                    🚚 В доставку
+                                </button>
+                                <button class="quick-action-btn danger" onclick="event.stopPropagation(); closeChatFromPool(${chat.id})" title="Закрыть чат">
+                                    ✅ Закрыть
+                                </button>
+                            </div>
+                        ` : isMyChat ? `
+                            <button class="return-action-btn" onclick="event.stopPropagation(); returnChatToPool(${chat.id})">
+                                📤 Вернуть в пул
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Выбор чата
+        function selectChat(chatId) {
+            currentChatId = chatId;
+            const chat = allChats.find(c => c.id === chatId);
+            const isCompleted = chat && chat.status === 'completed';
+            
+            renderChatsList();
+            
+            document.getElementById('empty-chat').style.display = 'none';
+            document.getElementById('chat-content').style.display = 'flex';
+            
+            document.getElementById('chat-client-name').textContent = chat.client_name;
+            document.getElementById('chat-header-details').innerHTML = `
+                <span>📞 ${chat.client_phone}</span>
+                <span>•</span>
+                <span>🏪 ${chat.shop_name}</span>
+                ${chat.product_url ? `<span>•</span><span><a href="${chat.product_url}" target="_blank" style="color: hsl(var(--primary)); text-decoration: none;">🔗 Товар</a></span>` : ''}
+            `;
+
+            const actionsDiv = document.getElementById('chat-header-actions');
+            if (isCompleted) {
+                actionsDiv.innerHTML = `
+                    <button class="header-action-btn" onclick="restoreChat(${chatId})" style="background: var(--success); color: white; border-color: transparent;">
+                        🔄 Восстановить
+                    </button>
+                `;
+            } else {
+                const isInPool = !chat.assigned_manager_id;
+                const isMyChat = chat.assigned_manager_id && chat.assigned_manager_name === currentUsername;
+                actionsDiv.innerHTML = `
+                    ${isInPool ? `
+                        <button class="header-action-btn" onclick="takeChatFromPool(${chatId})" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border-color: transparent;">
+                            📥 Взять из пула
+                        </button>
+                    ` : isMyChat ? `
+                        <button class="header-action-btn" onclick="returnChatToPool(${chatId})" style="background: hsl(var(--warning)); color: white; border-color: transparent;">
+                            📤 Вернуть в пул
+                        </button>
+                    ` : ''}
+                    <button class="header-action-btn" onclick="markAsDelivery()">🚚 В доставку</button>
+                    <button class="header-action-btn" onclick="markAsCompleted()">✅ Завершить</button>
+                `;
+            }
+
+            if (!isCompleted) {
+                document.getElementById('message-text').focus();
+            }
+
+            loadChatMessages(chatId);
+            startMessagesAutoRefresh();
+        }
+
+        // Загрузка сообщений
+        async function loadChatMessages(chatId) {
+            try {
+                const response = await fetch(`/api/chats/${chatId}/messages`);
+                const messages = await response.json();
+                
+                const container = document.getElementById('messages-container');
+                
+                if (messages.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-chat">
+                            <div class="empty-chat-icon">💬</div>
+                            <h3>Нет сообщений</h3>
+                            <p>Начните общение с клиентом</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = messages.map(msg => {
+                    const messageClass = msg.message_type === 'incoming' ? 'incoming' : 'outgoing';
+                    const time = new Date(msg.timestamp).toLocaleString('ru-RU', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        day: '2-digit',
+                        month: '2-digit'
+                    });
+                    const managerName = msg.manager_name ? `<div class="message-author">👤 ${msg.manager_name}</div>` : '';
+
+                    return `
+                        <div class="message-row ${messageClass}">
+                            ${managerName}
+                            <div class="message-wrapper">
+                                <div class="message-bubble">${msg.message_text}</div>
+                                <div class="message-time">${time}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                container.scrollTop = container.scrollHeight;
+            } catch (error) {
+                console.error('Ошибка загрузки сообщений:', error);
+            }
+        }
+
+        // Отправка сообщения
+        async function sendMessage() {
+            if (!currentChatId) return;
+
+            const messageInput = document.getElementById('message-text');
+            let messageText = messageInput.value.trim();
+
+            if (!messageText) return;
+
+            const quickReply = await getQuickReplyByText(messageText);
+            if (quickReply) {
+                messageText = quickReply;
+            }
+
+            const messageTextToShow = messageText;
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+
+            const container = document.getElementById('messages-container');
+            if (container.querySelector('.empty-chat')) {
+                container.innerHTML = '';
+            }
+            
+            const now = new Date();
+            const timeStr = now.toLocaleString('ru-RU', {
+                hour: '2-digit',
+                minute: '2-digit',
+                day: '2-digit',
+                month: '2-digit'
+            });
+            
+            const tempId = 'temp-' + Date.now();
+            container.insertAdjacentHTML('beforeend', `
+                <div class="message-row outgoing" id="${tempId}">
+                    <div class="message-wrapper">
+                        <div class="message-bubble">${messageTextToShow}</div>
+                        <div class="message-time">${timeStr}</div>
+                    </div>
+                </div>
+            `);
+            container.scrollTop = container.scrollHeight;
+
+            fetch(`/api/chats/${currentChatId}/messages`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({message: messageText})
+            }).then(response => {
+                if (response.ok) {
+                    Promise.all([
+                        loadChatMessages(currentChatId),
+                        loadChats()
+                    ]).then(() => {
+                        const temp = document.getElementById(tempId);
+                        if (temp) temp.remove();
+                    });
+                } else {
+                    showNotification('❌ Ошибка отправки', 'error');
+                    messageInput.value = messageTextToShow;
+                    document.getElementById(tempId)?.remove();
+                }
+            }).catch(error => {
+                console.error('Ошибка:', error);
+                showNotification('❌ Ошибка отправки', 'error');
+                messageInput.value = messageTextToShow;
+                document.getElementById(tempId)?.remove();
+            });
+        }
+
+        // Быстрые ответы
+        async function getQuickReplyByText(text) {
+            try {
+                const now = Date.now();
+                if (!quickRepliesCache || (now - quickRepliesCacheTime) > CACHE_DURATION) {
+                    const response = await fetch('/api/quick-replies');
+                    quickRepliesCache = await response.json();
+                    quickRepliesCacheTime = now;
+                }
+
+                const normalizedText = text.toLowerCase().trim();
+                const reply = quickRepliesCache.find(r => {
+                    const shortcut = (r.shortcut || '').toLowerCase().replace(/^\//, '');
+                    return shortcut === normalizedText || r.shortcut.toLowerCase() === normalizedText;
+                });
+                return reply ? reply.message : null;
+            } catch (error) {
+                return null;
+            }
+        }
+
+        async function showQuickRepliesMenu() {
+            const menu = document.getElementById('quick-replies-menu');
+            menu.classList.toggle('active');
+
+            if (menu.classList.contains('active')) {
+                try {
+                    const now = Date.now();
+                    if (!quickRepliesCache || (now - quickRepliesCacheTime) > CACHE_DURATION) {
+                        const response = await fetch('/api/quick-replies');
+                        quickRepliesCache = await response.json();
+                        quickRepliesCacheTime = now;
+                    }
+
+                    const replies = quickRepliesCache || [];
+                    document.getElementById('quick-replies-total').textContent = replies.length;
+                    document.getElementById('quick-replies-count').textContent = replies.length > 0 ? `(${replies.length})` : '';
+
+                    if (replies.length === 0) {
+                        document.getElementById('quick-replies-list').innerHTML = `
+                            <div class="quick-replies-empty">
+                                <div class="quick-replies-empty-icon">⚡</div>
+                                <div class="quick-replies-empty-title">Нет быстрых ответов</div>
+                                <div style="font-size: 0.875rem; opacity: 0.8;">Создайте быстрые ответы для ускорения работы</div>
+                                <a href="/quick-replies" class="quick-replies-empty-link">➕ Создать первый</a>
+                            </div>
+                        `;
+                    } else {
+                        document.getElementById('quick-replies-list').innerHTML = replies.map(reply => {
+                            const shortcut = reply.shortcut.replace(/^\//, '');
+                            const preview = reply.message.length > 80 ? reply.message.substring(0, 80) + '...' : reply.message;
+                            const charCount = reply.message.length;
+                            return `
+                                <div class="quick-reply-item" onclick="useQuickReply('${reply.message.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')">
+                                    <span class="quick-reply-shortcut">${shortcut}</span>
+                                    <div class="quick-reply-content">
+                                        <div class="quick-reply-text">${preview}</div>
+                                        <div class="quick-reply-meta">
+                                            <span>📝 ${charCount} символов</span>
+                                        </div>
+                                    </div>
+                                    <button class="quick-reply-send" onclick="event.stopPropagation(); sendQuickReply('${reply.message.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')">
+                                        <span>📤</span>
+                                        <span>Отправить</span>
+                                    </button>
+                                </div>
+                            `;
+                        }).join('');
+                    }
+                } catch (error) {
+                    console.error('Ошибка загрузки быстрых ответов:', error);
+                }
+            }
+        }
+
+
+        function useQuickReply(message) {
+            document.getElementById('message-text').value = message;
+            document.getElementById('quick-replies-menu').classList.remove('active');
+        }
+
+        async function sendQuickReply(message) {
+            document.getElementById('message-text').value = message;
+            document.getElementById('quick-replies-menu').classList.remove('active');
+            await sendMessage();
+        }
+
+        // Действия с чатом
+        function markAsDelivery() {
+            if (!currentChatId) return;
+            // Переносим чат в доставки со статусом "в работе"
+            fetch('/api/deliveries', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({chat_id: currentChatId, status: 'in_work'})
+            }).then(response => {
+                if (response.ok) {
+                    showNotification('✅ Чат переведен в доставку', 'success');
+                    loadChats();
+                } else {
+                    response.json().then(data => {
+                        showNotification('❌ ' + (data.error || 'Ошибка'), 'error');
+                    });
+                }
+            }).catch(() => showNotification('❌ Ошибка', 'error'));
+        }
+
+        function markAsCompleted() {
+            if (!currentChatId) return;
+            fetch(`/api/chats/${currentChatId}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({status: 'completed'})
+            }).then(response => {
+                if (response.ok) {
+                    showNotification('✅ Чат завершен', 'success');
+                    loadChats();
+                    if (currentSort === 'completed') {
+                        applySort('all');
+                    }
+                } else {
+                    showNotification('❌ Ошибка', 'error');
+                }
+            }).catch(() => showNotification('❌ Ошибка', 'error'));
+        }
+
+        /**
+         * Взять чат из пула себе
+         * 
+         * Назначает чат текущему менеджеру, убирая его из общего пула.
+         * 
+         * @function takeChatFromPool
+         * @param {number} chatId - ID чата для взятия из пула
+         */
+        function takeChatFromPool(chatId) {
+            if (!chatId) return;
+            fetch(`/api/chats/${chatId}/take`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            }).then(response => {
+                if (response.ok) {
+                    showNotification('✅ Чат взят из пула', 'success');
+                    loadChats();
+                    selectChat(chatId);
+                } else {
+                    showNotification('❌ Ошибка', 'error');
+                }
+            }).catch(() => showNotification('❌ Ошибка', 'error'));
+        }
+
+        /**
+         * Взять чат из пула и сразу перевести в доставку
+         * 
+         * Выполняет два действия за раз:
+         * 1. Берет чат себе (назначает менеджера)
+         * 2. Создает доставку для этого чата
+         * 
+         * @async
+         * @function takeAndMoveToDelivery
+         * @param {number} chatId - ID чата
+         */
+        async function takeAndMoveToDelivery(chatId) {
+            if (!chatId) return;
+            
+            try {
+                // Сначала берем чат из пула
+                const takeResponse = await fetch(`/api/chats/${chatId}/take`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                
+                if (!takeResponse.ok) {
+                    showNotification('❌ Ошибка при взятии чата', 'error');
+                    return;
+                }
+                
+                // Затем создаем доставку
+                const deliveryResponse = await fetch('/api/deliveries', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({chat_id: chatId, status: 'in_work'})
+                });
+                
+                if (deliveryResponse.ok) {
+                    showNotification('✅ Чат взят и переведен в доставку', 'success');
+                    loadChats();
+                    // Перенаправляем на страницу доставок
+                    window.location.href = '/deliveries';
+                } else {
+                    const error = await deliveryResponse.json();
+                    showNotification('⚠️ Чат взят, но ошибка при создании доставки: ' + (error.error || 'Неизвестная ошибка'), 'error');
+                    loadChats();
+                    selectChat(chatId);
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                showNotification('❌ Ошибка', 'error');
+            }
+        }
+
+        /**
+         * Закрыть чат прямо из пула
+         * 
+         * Завершает чат без необходимости брать его себе.
+         * Полезно для спам-чатов или неактуальных обращений.
+         * 
+         * @function closeChatFromPool
+         * @param {number} chatId - ID чата для закрытия
+         */
+        function closeChatFromPool(chatId) {
+            if (!chatId) return;
+            
+            if (!confirm('Вы уверены, что хотите закрыть этот чат? Это действие нельзя отменить.')) {
+                return;
+            }
+            
+            fetch(`/api/chats/${chatId}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({status: 'completed'})
+            }).then(response => {
+                if (response.ok) {
+                    showNotification('✅ Чат закрыт', 'success');
+                    loadChats();
+                } else {
+                    showNotification('❌ Ошибка', 'error');
+                }
+            }).catch(() => showNotification('❌ Ошибка', 'error'));
+        }
+
+        function returnChatToPool(chatId) {
+            if (!chatId) return;
+            fetch(`/api/chats/${chatId}/return`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            }).then(response => {
+                if (response.ok) {
+                    showNotification('✅ Чат возвращен в пул', 'success');
+                    loadChats();
+                } else {
+                    showNotification('❌ Ошибка', 'error');
+                }
+            }).catch(() => showNotification('❌ Ошибка', 'error'));
+        }
+
+        function restoreChat(chatId) {
+            if (!chatId) return;
+            fetch(`/api/chats/${chatId}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({status: 'active'})
+            }).then(response => {
+                if (response.ok) {
+                    showNotification('✅ Чат восстановлен', 'success');
+                    loadChats();
+                    applySort('all');
+                    selectChat(chatId);
+                } else {
+                    showNotification('❌ Ошибка', 'error');
+                }
+            }).catch(() => showNotification('❌ Ошибка', 'error'));
+        }
+
+        // Вспомогательные функции
+        function getPriorityIcon(priority) {
+            const icons = {'urgent': '🔥', 'new': '🆕', 'active': '💬', 'delivery': '🚚'};
+            return icons[priority] || '💬';
+        }
+
+        function getPriorityText(priority) {
+            const texts = {'urgent': 'СРОЧНО', 'new': 'НОВЫЙ', 'active': 'АКТИВ', 'delivery': 'ДОСТАВКА'};
+            return texts[priority] || 'ЧАТ';
+        }
+
+        function getTimerClass(timer) {
+            if (timer > 20) return 'urgent';
+            if (timer > 10) return 'warning';
+            return 'normal';
+        }
+
+        function formatTimer(minutes) {
+            if (minutes < 60) return `${minutes} мин`;
+            const hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            return `${hours}ч ${mins}м`;
+        }
+
+        function startMessagesAutoRefresh() {
+            if (messagesAutoRefreshInterval) clearInterval(messagesAutoRefreshInterval);
+            messagesAutoRefreshInterval = setInterval(() => {
+                if (currentChatId) {
+                    loadChatMessages(currentChatId);
+                }
+            }, 5000);
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 10000;
+                padding: 1rem 1.5rem;
+                border-radius: calc(var(--radius));
+                box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+                animation: slideIn 0.3s ease-out;
+                background: ${type === 'success' ? 'linear-gradient(135deg, #10b981, #059669)' : type === 'error' ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'var(--gradient-primary)'};
+                color: white;
+                font-weight: 600;
+            `;
+            document.body.appendChild(notification);
+            setTimeout(() => {
+                notification.style.animation = 'fadeOut 0.3s ease-out';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            const textarea = document.getElementById('message-text');
+            if (textarea) {
+                textarea.addEventListener('input', function() {
+                    this.style.height = 'auto';
+                    this.style.height = Math.min(this.scrollHeight, 140) + 'px';
+                });
+
+                textarea.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                    }
+                });
+            }
+
+            document.querySelectorAll('.filter-chip').forEach(chip => {
+                chip.addEventListener('click', () => applySort(chip.dataset.sort));
+            });
+
+            document.addEventListener('click', function(event) {
+                if (!event.target.closest('#quick-replies-menu') && !event.target.closest('.quick-action')) {
+                    document.getElementById('quick-replies-menu').classList.remove('active');
+                }
+            });
+
+            loadChats();
+            setInterval(loadChats, 30000);
+        });
+    </script>
+</body>
+</html>

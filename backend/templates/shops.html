@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TBGSOSAT CRM - Магазины</title>
+    <link rel="stylesheet" href="/css/old-style.css">
+    <style>
+        .shops-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .shop-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .shop-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-primary);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease;
+        }
+
+        .shop-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .shop-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 28px rgba(0,0,0,0.15), 0 4px 8px rgba(0,0,0,0.1);
+            border-color: var(--primary);
+        }
+
+        .shop-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+
+        .shop-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .shop-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: #10b981;
+            color: white;
+        }
+
+        .status-inactive {
+            background: #6b7280;
+            color: white;
+        }
+
+        .shop-info {
+            margin: 1rem 0;
+            font-size: 0.875rem;
+            color: var(--muted-foreground);
+        }
+
+        .shop-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: 2px solid hsl(var(--border));
+            background: hsl(var(--background));
+            color: hsl(var(--foreground));
+            border-radius: calc(var(--radius));
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 0.875rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:hover {
+            background: hsl(var(--accent));
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: calc(var(--radius) + 8px);
+            padding: 2.5rem;
+            max-width: 550px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .modal-content h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: hsl(var(--foreground));
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            background: hsl(var(--input));
+            border: 2px solid hsl(var(--border));
+            border-radius: calc(var(--radius));
+            color: hsl(var(--foreground));
+            font-size: 0.9375rem;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-sizing: border-box;
+        }
+
+        .form-input:hover {
+            border-color: hsl(var(--border) / 1.2);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: hsl(var(--primary));
+            box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            background: hsl(var(--input) / 1.1);
+        }
+
+        .form-input::placeholder {
+            color: hsl(var(--muted-foreground) / 0.6);
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--muted);
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="/{% if user.role == 'admin' %}admin/dashboard{% else %}manager/dashboard{% endif %}" class="logo">
+                    TBGSOSAT CRM {% if user.role == 'admin' %}ADMIN{% else %}MANAGER{% endif %}
+                </a>
+                <nav class="nav">
+                    <span style="color: var(--muted-foreground);">
+                        {% if user.role == 'admin' %}👑{% else %}👨‍💼{% endif %} {{ user.username }}
+                    </span>
+                    <a href="/{% if user.role == 'admin' %}admin/dashboard{% else %}manager/dashboard{% endif %}" class="nav-link">📊 Дашборд</a>
+                    <a href="/chats" class="nav-link">💬 Чаты</a>
+                    {% if user.role == 'admin' %}
+                    <a href="/shops" class="nav-link active">🏪 Магазины</a>
+                    <a href="/analytics" class="nav-link">📊 Аналитика</a>
+                    <a href="/settings" class="nav-link">⚙️ Настройки</a>
+                    {% endif %}
+                    <a href="/logout" class="nav-link">🚪 Выход</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h1 style="font-size: 2.5rem; font-weight: 800; background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin: 0 0 0.5rem 0;">🏪 Магазины Авито</h1>
+                    <p style="color: hsl(var(--muted-foreground)); margin: 0;">Управление магазинами и API ключами</p>
+                </div>
+                {% if user.role == 'admin' %}
+                <button class="btn btn-primary" onclick="openAddShopModal()" style="font-size: 1rem; padding: 1rem 2rem;">➕ Добавить магазин</button>
+                {% endif %}
+            </div>
+
+            <!-- Поиск по магазинам -->
+            {% if user.role == 'admin' %}
+            <div style="position: relative; margin-bottom: 1.5rem; max-width: 500px;">
+                <input 
+                    type="search" 
+                    id="shop-search" 
+                    placeholder="🔍 Поиск по магазинам..." 
+                    class="form-input"
+                    style="padding-left: 2.5rem;"
+                    oninput="searchShops(this.value)"
+                >
+                <span style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--muted-foreground); pointer-events: none;">🔍</span>
+            </div>
+            {% endif %}
+
+            <div class="shops-container" id="shops-container">
+                <!-- Магазины загружаются через JavaScript -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Модальное окно добавления/редактирования магазина -->
+    <div class="modal" id="shop-modal">
+        <div class="modal-content">
+            <h2 id="modal-title">Добавить магазин</h2>
+            <form id="shop-form" onsubmit="saveShop(event)">
+                <input type="hidden" id="shop-id" name="id">
+                
+                <div class="form-group">
+                    <label class="form-label">Название магазина</label>
+                    <input type="text" class="form-input" id="shop-name" name="name" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">URL магазина</label>
+                    <input type="url" class="form-input" id="shop-url" name="shop_url" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">API ключ</label>
+                    <input type="text" class="form-input" id="shop-api-key" name="api_key">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" id="shop-active" name="is_active" checked>
+                        Активен
+                    </label>
+                </div>
+
+                <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">Сохранить</button>
+                    <button type="button" class="btn" onclick="closeShopModal()" style="flex: 1;">Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Модальное окно назначения менеджеров -->
+    <div class="modal" id="managers-modal">
+        <div class="modal-content">
+            <h2 id="managers-modal-title">Назначить менеджеров</h2>
+            <div id="managers-list">
+                <!-- Менеджеры загружаются через JavaScript -->
+            </div>
+            <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem;">
+                <button type="button" class="btn btn-primary" onclick="saveManagers()" style="flex: 1;">Сохранить</button>
+                <button type="button" class="btn" onclick="closeManagersModal()" style="flex: 1;">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let shops = [];
+        let filteredShops = [];
+        let editingShopId = null;
+        let searchQuery = '';
+
+        // Поиск по магазинам
+        function searchShops(query) {
+            searchQuery = query.toLowerCase().trim();
+            if (searchQuery) {
+                filteredShops = shops.filter(shop => {
+                    const name = (shop.name || '').toLowerCase();
+                    const url = (shop.shop_url || '').toLowerCase();
+                    return name.includes(searchQuery) || url.includes(searchQuery);
+                });
+            } else {
+                filteredShops = shops;
+            }
+            renderShops();
+        }
+
+        // Загрузка магазинов
+        async function loadShops() {
+            try {
+                const response = await fetch('/api/shops');
+                shops = await response.json();
+                filteredShops = shops;
+                renderShops();
+            } catch (error) {
+                console.error('Ошибка загрузки магазинов:', error);
+            }
+        }
+
+        // Отрисовка магазинов
+        function renderShops() {
+            const container = document.getElementById('shops-container');
+            const shopsToRender = searchQuery ? filteredShops : shops;
+            
+            if (shopsToRender.length === 0) {
+                const emptyMessage = searchQuery 
+                    ? '<h3>Ничего не найдено</h3><p>Попробуйте изменить поисковый запрос</p>'
+                    : '<h3>Магазинов нет</h3><p>Добавьте первый магазин для начала работы</p>';
+                container.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--muted-foreground);">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">${searchQuery ? '🔍' : '🏪'}</div>
+                        ${emptyMessage}
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = shopsToRender.map((shop, index) => {
+                const delay = index * 0.05;
+                return `
+                <div class="shop-card">
+                    <div class="shop-header">
+                        <div>
+                            <div class="shop-name">${shop.name}</div>
+                            <span class="shop-status ${shop.is_active ? 'status-active' : 'status-inactive'}">
+                                ${shop.is_active ? 'Активен' : 'Неактивен'}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="shop-info">
+                        <div><strong>URL:</strong> <a href="${shop.shop_url}" target="_blank" style="color: var(--primary);">${shop.shop_url}</a></div>
+                        <div><strong>API ключ:</strong> ${shop.api_key ? '***' + shop.api_key.slice(-4) : 'Не указан'}</div>
+                    </div>
+                    {% if user.role == 'admin' %}
+                    <div class="shop-actions">
+                        <button class="btn" onclick="editShop(${shop.id})">✏️ Редактировать</button>
+                        <button class="btn" onclick="deleteShop(${shop.id})">🗑️ Удалить</button>
+                        <button class="btn btn-primary" onclick="viewShopStats(${shop.id})">📊 Статистика</button>
+                        <button class="btn btn-primary" onclick="assignManagers(${shop.id})">👥 Назначить менеджеров</button>
+                    </div>
+                    {% endif %}
+                </div>
+            `;
+            }).join('');
+        }
+
+        // Открытие модального окна добавления
+        function openAddShopModal() {
+            editingShopId = null;
+            document.getElementById('modal-title').textContent = 'Добавить магазин';
+            document.getElementById('shop-form').reset();
+            document.getElementById('shop-id').value = '';
+            document.getElementById('shop-modal').classList.add('active');
+        }
+
+        // Редактирование магазина
+        function editShop(shopId) {
+            const shop = shops.find(s => s.id === shopId);
+            if (!shop) return;
+
+            editingShopId = shopId;
+            document.getElementById('modal-title').textContent = 'Редактировать магазин';
+            document.getElementById('shop-id').value = shop.id;
+            document.getElementById('shop-name').value = shop.name;
+            document.getElementById('shop-url').value = shop.shop_url;
+            document.getElementById('shop-api-key').value = shop.api_key || '';
+            document.getElementById('shop-active').checked = shop.is_active;
+            document.getElementById('shop-modal').classList.add('active');
+        }
+
+        // Сохранение магазина
+        async function saveShop(event) {
+            event.preventDefault();
+            
+            const formData = {
+                name: document.getElementById('shop-name').value,
+                shop_url: document.getElementById('shop-url').value,
+                api_key: document.getElementById('shop-api-key').value,
+                is_active: document.getElementById('shop-active').checked
+            };
+
+            try {
+                let response;
+                if (editingShopId) {
+                    response = await fetch(`/api/shops/${editingShopId}`, {
+                        method: 'PUT',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(formData)
+                    });
+                } else {
+                    response = await fetch('/api/shops', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(formData)
+                    });
+                }
+
+                if (response.ok) {
+                    closeShopModal();
+                    loadShops();
+                } else {
+                    alert('Ошибка сохранения магазина');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                alert('Ошибка сохранения магазина');
+            }
+        }
+
+        // Удаление магазина
+        async function deleteShop(shopId) {
+            if (!confirm('Вы уверены, что хотите удалить этот магазин?')) return;
+
+            try {
+                const response = await fetch(`/api/shops/${shopId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    loadShops();
+                } else {
+                    alert('Ошибка удаления магазина');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                alert('Ошибка удаления магазина');
+            }
+        }
+
+        // Просмотр статистики магазина
+        async function viewShopStats(shopId) {
+            try {
+                const response = await fetch(`/api/shops/${shopId}/stats`);
+                const stats = await response.json();
+                alert(`Статистика магазина:\nВсего чатов: ${stats.total_chats}\nАктивных: ${stats.active_chats}\nСрочных: ${stats.urgent_chats}`);
+            } catch (error) {
+                console.error('Ошибка:', error);
+            }
+        }
+
+        // Назначение менеджеров
+        let currentShopIdForManagers = null;
+        let allManagers = [];
+        let assignedManagers = [];
+
+        async function assignManagers(shopId) {
+            currentShopIdForManagers = shopId;
+            
+            try {
+                // Загружаем всех менеджеров
+                const managersResponse = await fetch('/api/users');
+                const users = await managersResponse.json();
+                allManagers = users.filter(u => u.role === 'manager');
+
+                // Загружаем назначенных менеджеров
+                const shopResponse = await fetch(`/api/shops/${shopId}/managers`);
+                if (shopResponse.ok) {
+                    assignedManagers = await shopResponse.json();
+                }
+
+                renderManagersList();
+                document.getElementById('managers-modal').classList.add('active');
+            } catch (error) {
+                console.error('Ошибка загрузки менеджеров:', error);
+            }
+        }
+
+        function renderManagersList() {
+            const container = document.getElementById('managers-list');
+            
+            if (allManagers.length === 0) {
+                container.innerHTML = '<p style="color: var(--muted-foreground);">Нет доступных менеджеров</p>';
+                return;
+            }
+
+            container.innerHTML = allManagers.map(manager => {
+                const isAssigned = assignedManagers.some(m => m.id === manager.id);
+                return `
+                    <div class="form-group" style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; background: var(--background); border-radius: 8px; margin-bottom: 0.5rem;">
+                        <div>
+                            <div style="font-weight: 600;">${manager.username}</div>
+                            <div style="font-size: 0.75rem; color: var(--muted-foreground);">${manager.email}</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" ${isAssigned ? 'checked' : ''} onchange="toggleManager(${manager.id}, this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleManager(managerId, isAssigned) {
+            if (isAssigned) {
+                if (!assignedManagers.find(m => m.id === managerId)) {
+                    assignedManagers.push(allManagers.find(m => m.id === managerId));
+                }
+            } else {
+                assignedManagers = assignedManagers.filter(m => m.id !== managerId);
+            }
+        }
+
+        async function saveManagers() {
+            if (!currentShopIdForManagers) return;
+
+            try {
+                // Назначаем каждого менеджера
+                for (const manager of assignedManagers) {
+                    await fetch(`/api/shops/${currentShopIdForManagers}/assign`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({manager_id: manager.id})
+                    });
+                }
+
+                alert('✅ Менеджеры успешно назначены');
+                closeManagersModal();
+            } catch (error) {
+                console.error('Ошибка сохранения менеджеров:', error);
+                alert('❌ Ошибка сохранения менеджеров');
+            }
+        }
+
+        function closeManagersModal() {
+            document.getElementById('managers-modal').classList.remove('active');
+            currentShopIdForManagers = null;
+            assignedManagers = [];
+        }
+
+        // Закрытие модального окна
+        function closeShopModal() {
+            document.getElementById('shop-modal').classList.remove('active');
+        }
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            loadShops();
+        });
+    </script>
+</body>
+</html>
+

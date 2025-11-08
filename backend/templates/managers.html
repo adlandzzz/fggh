@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TBGSOSAT CRM - Управление менеджерами</title>
+    <link rel="stylesheet" href="/css/old-style.css">
+    <style>
+        .managers-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .manager-card {
+            background: hsl(var(--card));
+            border: 2px solid hsl(var(--border));
+            border-radius: calc(var(--radius) + 6px);
+            padding: 2rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            animation: fadeIn 0.3s ease-out;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .manager-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-primary);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease;
+        }
+
+        .manager-card:hover {
+            border-color: hsl(var(--primary) / 0.5);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .manager-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .manager-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1.5rem;
+        }
+
+        .manager-name {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .manager-status {
+            padding: 0.5rem 1rem;
+            border-radius: calc(var(--radius));
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-active {
+            background: linear-gradient(135deg, hsl(var(--success)), hsl(var(--success) / 0.8));
+            color: white;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        }
+
+        .status-inactive {
+            background: hsl(var(--muted));
+            color: hsl(var(--muted-foreground));
+        }
+
+        .manager-info {
+            margin: 1.5rem 0;
+            font-size: 0.9375rem;
+            color: hsl(var(--muted-foreground));
+            line-height: 1.8;
+        }
+
+        .manager-info strong {
+            color: hsl(var(--foreground));
+            font-weight: 600;
+        }
+
+        .manager-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin: 1.5rem 0;
+            padding: 1.25rem;
+            background: hsl(var(--muted) / 0.5);
+            border-radius: calc(var(--radius));
+            border: 1px solid hsl(var(--border));
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.25rem;
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: hsl(var(--muted-foreground));
+            font-weight: 500;
+        }
+
+        .manager-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: 2px solid hsl(var(--border));
+            background: hsl(var(--background));
+            color: hsl(var(--foreground));
+            border-radius: calc(var(--radius));
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 0.875rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:hover {
+            background: hsl(var(--accent));
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, hsl(var(--destructive)), hsl(var(--destructive) / 0.8));
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: calc(var(--radius) + 8px);
+            padding: 2.5rem;
+            max-width: 550px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .modal-content h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: hsl(var(--foreground));
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+            color: hsl(var(--foreground));
+            font-size: 0.9375rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-label-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: hsl(var(--primary) / 0.1);
+            border-radius: 4px;
+            color: hsl(var(--primary));
+            font-size: 0.875rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            background: hsl(var(--input));
+            border: 2px solid hsl(var(--border));
+            border-radius: calc(var(--radius));
+            color: hsl(var(--foreground));
+            font-size: 0.9375rem;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-sizing: border-box;
+        }
+
+        .form-input:hover {
+            border-color: hsl(var(--border) / 1.2);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: hsl(var(--primary));
+            box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            background: hsl(var(--input) / 1.1);
+        }
+
+        .form-input::placeholder {
+            color: hsl(var(--muted-foreground) / 0.6);
+        }
+
+        .form-help {
+            font-size: 0.8125rem;
+            color: hsl(var(--muted-foreground));
+            margin-top: 0.5rem;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="/admin/dashboard" class="logo">TBGSOSAT CRM ADMIN</a>
+                <nav class="nav">
+                    <span style="color: var(--muted-foreground);">👑 {{ user.username }}</span>
+                    <a href="/admin/dashboard" class="nav-link">📊 Дашборд</a>
+                    <a href="/chats" class="nav-link">💬 Чаты</a>
+                    <a href="/shops" class="nav-link">🏪 Магазины</a>
+                    <a href="/managers" class="nav-link active">👥 Менеджеры</a>
+                    <a href="/analytics" class="nav-link">📊 Аналитика</a>
+                    <a href="/settings" class="nav-link">⚙️ Настройки</a>
+                    <a href="/logout" class="nav-link">🚪 Выход</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h1 style="font-size: 2.5rem; font-weight: 800; background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin: 0 0 0.5rem 0;">👥 Управление менеджерами</h1>
+                    <p style="color: hsl(var(--muted-foreground)); margin: 0;">Создание и управление аккаунтами менеджеров</p>
+                </div>
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="openAddManagerModal()" style="font-size: 1rem; padding: 1rem 2rem;">➕ Добавить менеджера</button>
+                    <button class="btn" onclick="viewGeneralSchedule()" style="font-size: 1rem; padding: 1rem 2rem; background: hsl(var(--primary) / 0.1); border-color: hsl(var(--primary) / 0.3); color: hsl(var(--primary));">📅 Общий график работы</button>
+                </div>
+            </div>
+
+            <!-- Поиск -->
+            <div style="position: relative; margin-bottom: 1.5rem; max-width: 500px;">
+                <input 
+                    type="search" 
+                    id="manager-search" 
+                    placeholder="🔍 Поиск по менеджерам..." 
+                    class="form-input"
+                    style="padding: 0.875rem 1rem 0.875rem 2.75rem; width: 100%;"
+                    oninput="searchManagers(this.value)"
+                >
+                <span style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: hsl(var(--muted-foreground)); pointer-events: none;">🔍</span>
+            </div>
+
+            <div class="managers-container" id="managers-container">
+                <!-- Менеджеры загружаются через JavaScript -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Модальное окно добавления/редактирования менеджера -->
+    <div class="modal" id="manager-modal">
+        <div class="modal-content">
+            <h2 id="modal-title">➕ Добавить менеджера</h2>
+            <form id="manager-form" onsubmit="saveManager(event)">
+                <input type="hidden" id="manager-id" name="id">
+                
+                <div class="form-group">
+                    <label class="form-label">
+                        <span class="form-label-icon">👤</span>
+                        Имя менеджера
+                    </label>
+                    <input type="text" class="form-input" id="manager-username" name="username" required placeholder="Введите имя менеджера">
+                    <span class="form-help">Полное имя менеджера для отображения в системе</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <span class="form-label-icon">📧</span>
+                        Email
+                    </label>
+                    <input type="email" class="form-input" id="manager-email" name="email" required placeholder="manager@example.com">
+                    <span class="form-help">Email будет использоваться для входа в систему</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <span class="form-label-icon">🔒</span>
+                        Пароль
+                    </label>
+                    <input type="password" class="form-input" id="manager-password" name="password" required placeholder="Минимум 6 символов" minlength="6">
+                    <span class="form-help">Пароль должен содержать минимум 6 символов</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <span class="form-label-icon">💰</span>
+                        Зарплата (₽)
+                    </label>
+                    <input type="number" class="form-input" id="manager-salary" name="salary" min="0" step="0.01" value="0" placeholder="50000">
+                    <span class="form-help">Месячная зарплата менеджера</span>
+                </div>
+
+                <div style="display: flex; gap: 0.75rem; margin-top: 2rem;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1; font-size: 1rem; padding: 1rem;">💾 Сохранить</button>
+                    <button type="button" class="btn" onclick="closeManagerModal()" style="flex: 1; font-size: 1rem; padding: 1rem;">❌ Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let managers = [];
+        let filteredManagers = [];
+        let editingManagerId = null;
+        let searchQuery = '';
+
+        // Поиск по менеджерам
+        function searchManagers(query) {
+            searchQuery = query.toLowerCase().trim();
+            if (searchQuery) {
+                filteredManagers = managers.filter(manager => {
+                    const name = (manager.username || '').toLowerCase();
+                    const email = (manager.email || '').toLowerCase();
+                    return name.includes(searchQuery) || email.includes(searchQuery);
+                });
+            } else {
+                filteredManagers = managers;
+            }
+            renderManagers();
+        }
+
+        // Загрузка менеджеров
+        async function loadManagers() {
+            try {
+                const response = await fetch('/api/users');
+                const allUsers = await response.json();
+                managers = allUsers.filter(u => u.role === 'manager');
+                filteredManagers = managers;
+                renderManagers();
+            } catch (error) {
+                console.error('Ошибка загрузки менеджеров:', error);
+            }
+        }
+
+        // Загрузка статистики менеджера
+        async function loadManagerStats(managerId) {
+            try {
+                const [shiftsResponse, penaltiesResponse, activityResponse] = await Promise.all([
+                    fetch('/api/shifts'),
+                    fetch('/api/penalties'),
+                    fetch(`/api/activity-logs?manager_id=${managerId}&limit=10`)
+                ]);
+                
+                const shifts = await shiftsResponse.json();
+                const penalties = await penaltiesResponse.json();
+                const activity = await activityResponse.json();
+                
+                const managerShifts = shifts.filter(s => s.manager_id === managerId);
+                const managerPenalties = penalties.filter(p => p.manager_id === managerId);
+                
+                return {
+                    shifts: managerShifts.length,
+                    penalties: managerPenalties.length,
+                    totalPenaltyAmount: managerPenalties.reduce((sum, p) => sum + (parseFloat(p.penalty_amount) || 0), 0),
+                    recentActivity: activity.length
+                };
+            } catch (error) {
+                console.error('Ошибка загрузки статистики:', error);
+                return { shifts: 0, penalties: 0, totalPenaltyAmount: 0, recentActivity: 0 };
+            }
+        }
+
+        // Отрисовка менеджеров
+        async function renderManagers() {
+            const container = document.getElementById('managers-container');
+            const managersToRender = searchQuery ? filteredManagers : managers;
+            
+            if (managersToRender.length === 0) {
+                const emptyMessage = searchQuery 
+                    ? '<h3>Ничего не найдено</h3><p>Попробуйте изменить поисковый запрос</p>'
+                    : '<h3>Менеджеров нет</h3><p>Добавьте первого менеджера для начала работы</p>';
+                container.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: hsl(var(--muted-foreground));">
+                        <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;">${searchQuery ? '🔍' : '👥'}</div>
+                        ${emptyMessage}
+                    </div>
+                `;
+                return;
+            }
+
+            // Загружаем статистику для каждого менеджера
+            const managersWithStats = await Promise.all(
+                managersToRender.map(async (manager) => {
+                    const stats = await loadManagerStats(manager.id);
+                    return { ...manager, stats };
+                })
+            );
+
+            container.innerHTML = managersWithStats.map((manager, index) => {
+                const delay = index * 0.05;
+                const stats = manager.stats || { shifts: 0, penalties: 0, totalPenaltyAmount: 0, recentActivity: 0 };
+                
+                return `
+                <div class="manager-card" style="animation-delay: ${delay}s;">
+                    <div class="manager-header">
+                        <div>
+                            <div class="manager-name">${manager.username}</div>
+                            <div style="font-size: 0.875rem; color: hsl(var(--muted-foreground));">${manager.email}</div>
+                        </div>
+                        <span class="manager-status ${manager.is_active ? 'status-active' : 'status-inactive'}">
+                            ${manager.is_active ? '✅ Активен' : '❌ Неактивен'}
+                        </span>
+                    </div>
+
+                    <div class="manager-info">
+                        <div><strong>KPI:</strong> ${manager.kpi_score || 0}%</div>
+                        <div><strong>Зарплата:</strong> ${parseFloat(manager.salary || 0).toLocaleString('ru-RU')} ₽</div>
+                        <div><strong>Создан:</strong> ${new Date(manager.created_at).toLocaleDateString('ru-RU')}</div>
+                    </div>
+
+                    <div class="manager-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">${stats.shifts}</div>
+                            <div class="stat-label">Смен</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${stats.penalties}</div>
+                            <div class="stat-label">Штрафов</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" style="color: hsl(var(--destructive));">${stats.totalPenaltyAmount.toLocaleString('ru-RU')}</div>
+                            <div class="stat-label">Сумма штрафов (₽)</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${stats.recentActivity}</div>
+                            <div class="stat-label">Действий</div>
+                        </div>
+                    </div>
+
+                    <div class="manager-actions">
+                        <button class="btn" onclick="viewManagerActivity(${manager.id})">📊 Действия</button>
+                        <button class="btn" onclick="viewManagerPenalties(${manager.id})">⚠️ Штрафы</button>
+                        <button class="btn" onclick="editManager(${manager.id})">✏️ Редактировать</button>
+                        ${manager.is_active ? 
+                            `<button class="btn btn-danger" onclick="deactivateManager(${manager.id})">🚫 Деактивировать</button>` :
+                            `<button class="btn btn-primary" onclick="activateManager(${manager.id})">✅ Активировать</button>`
+                        }
+                    </div>
+                </div>
+            `;
+            }).join('');
+        }
+
+        // Открытие модального окна добавления
+        function openAddManagerModal() {
+            editingManagerId = null;
+            document.getElementById('modal-title').textContent = '➕ Добавить менеджера';
+            document.getElementById('manager-form').reset();
+            document.getElementById('manager-id').value = '';
+            document.getElementById('manager-password').required = true;
+            document.getElementById('manager-modal').classList.add('active');
+        }
+
+        // Редактирование менеджера
+        function editManager(managerId) {
+            const manager = managers.find(m => m.id === managerId);
+            if (!manager) return;
+
+            editingManagerId = managerId;
+            document.getElementById('modal-title').textContent = '✏️ Редактировать менеджера';
+            document.getElementById('manager-id').value = manager.id;
+            document.getElementById('manager-username').value = manager.username;
+            document.getElementById('manager-email').value = manager.email;
+            document.getElementById('manager-password').value = '';
+            document.getElementById('manager-password').required = false;
+            document.getElementById('manager-password').placeholder = 'Оставьте пустым, чтобы не менять';
+            document.getElementById('manager-salary').value = manager.salary || 0;
+            document.getElementById('manager-modal').classList.add('active');
+        }
+
+        // Сохранение менеджера
+        async function saveManager(event) {
+            event.preventDefault();
+            
+            const formData = {
+                username: document.getElementById('manager-username').value.trim(),
+                email: document.getElementById('manager-email').value.trim(),
+                salary: parseFloat(document.getElementById('manager-salary').value) || 0
+            };
+
+            const password = document.getElementById('manager-password').value.trim();
+            if (password || !editingManagerId) {
+                if (password.length < 6) {
+                    alert('Пароль должен содержать минимум 6 символов');
+                    return;
+                }
+                formData.password = password;
+            }
+
+            try {
+                let response;
+                if (editingManagerId) {
+                    response = await fetch(`/api/managers/${editingManagerId}`, {
+                        method: 'PUT',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(formData)
+                    });
+                } else {
+                    response = await fetch('/api/managers', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(formData)
+                    });
+                }
+
+                if (response.ok) {
+                    closeManagerModal();
+                    loadManagers();
+                    showNotification(editingManagerId ? '✅ Менеджер успешно обновлен' : '✅ Менеджер успешно создан', 'success');
+                } else {
+                    const error = await response.json();
+                    alert('Ошибка: ' + (error.error || 'Неизвестная ошибка'));
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                alert('Ошибка сохранения менеджера');
+            }
+        }
+
+        // Деактивация менеджера
+        async function deactivateManager(managerId) {
+            if (!confirm('Деактивировать этого менеджера?')) return;
+
+            try {
+                const response = await fetch(`/api/managers/${managerId}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({is_active: false})
+                });
+
+                if (response.ok) {
+                    loadManagers();
+                    showNotification('✅ Менеджер деактивирован', 'success');
+                } else {
+                    alert('Ошибка деактивации менеджера');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                alert('Ошибка деактивации менеджера');
+            }
+        }
+
+        // Активация менеджера
+        async function activateManager(managerId) {
+            try {
+                const response = await fetch(`/api/managers/${managerId}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({is_active: true})
+                });
+
+                if (response.ok) {
+                    loadManagers();
+                    showNotification('✅ Менеджер активирован', 'success');
+                } else {
+                    alert('Ошибка активации менеджера');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                alert('Ошибка активации менеджера');
+            }
+        }
+
+        // Просмотр действий менеджера
+        async function viewManagerActivity(managerId) {
+            try {
+                const response = await fetch(`/api/activity-logs?manager_id=${managerId}&limit=50`);
+                const logs = await response.json();
+                
+                if (logs.length === 0) {
+                    alert('Нет действий для отображения');
+                    return;
+                }
+
+                const logsText = logs.map(log => {
+                    const time = new Date(log.created_at).toLocaleString('ru-RU');
+                    return `${time} - ${log.action_description || log.action_type}`;
+                }).join('\n');
+
+                alert(`Действия менеджера:\n\n${logsText}`);
+            } catch (error) {
+                console.error('Ошибка:', error);
+                alert('Ошибка загрузки действий');
+            }
+        }
+
+        // Просмотр штрафов менеджера
+        async function viewManagerPenalties(managerId) {
+            try {
+                const response = await fetch('/api/penalties');
+                const allPenalties = await response.json();
+                const penalties = allPenalties.filter(p => p.manager_id === managerId);
+                
+                if (penalties.length === 0) {
+                    alert('У менеджера нет штрафов');
+                    return;
+                }
+
+                const totalAmount = penalties.reduce((sum, p) => sum + (parseFloat(p.penalty_amount) || 0), 0);
+                const penaltiesText = penalties.map(p => {
+                    const time = new Date(p.created_at).toLocaleString('ru-RU');
+                    return `${time} - ${p.penalty_amount} ₽ (${p.reason || p.penalty_type})`;
+                }).join('\n');
+
+                alert(`Штрафы менеджера:\n\n${penaltiesText}\n\nВсего: ${totalAmount.toLocaleString('ru-RU')} ₽`);
+            } catch (error) {
+                console.error('Ошибка:', error);
+                alert('Ошибка загрузки штрафов');
+            }
+        }
+
+        // Просмотр и редактирование общего графика работы с назначением менеджеров
+        async function viewWorkSchedule(userId, username) {
+            try {
+                // Загружаем всех менеджеров
+                const managersResponse = await fetch('/api/managers/list');
+                const allManagers = await managersResponse.json();
+                
+                // Загружаем назначения менеджеров на дни недели
+                const assignmentsResponse = await fetch('/api/day-managers');
+                const allAssignments = await assignmentsResponse.ok ? await assignmentsResponse.json() : [];
+                
+                const daysOfWeek = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
+                
+                // Создаем модальное окно для графика работы
+                const modal = document.createElement('div');
+                modal.className = 'modal active';
+                modal.id = 'schedule-modal';
+                modal.style.zIndex = '10001';
+                modal.innerHTML = `
+                    <div class="modal-content" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
+                        <h2>📅 График работы менеджеров</h2>
+                        <div style="margin-bottom: 1.5rem; padding: 1rem; background: hsl(var(--primary) / 0.1); border-radius: calc(var(--radius)); border: 1px solid hsl(var(--primary) / 0.3);">
+                            <div style="font-weight: 600; margin-bottom: 0.5rem;">ℹ️ Управление графиком работы</div>
+                            <div style="font-size: 0.875rem; color: hsl(var(--muted-foreground));">
+                                Выберите менеджеров, которые будут работать в каждый день недели. Можно назначить несколько менеджеров на один день.
+                            </div>
+                        </div>
+                        <div id="schedule-form">
+                            ${daysOfWeek.map((day, index) => {
+                                const dayAssignments = allAssignments.filter(a => a.day_of_week === index);
+                                
+                                return `
+                                    <div class="day-schedule-card" style="margin-bottom: 1.5rem; padding: 1.5rem; background: hsl(var(--card)); border: 2px solid hsl(var(--border)); border-radius: calc(var(--radius) + 4px);">
+                                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                                            <h3 style="margin: 0; font-size: 1.25rem; font-weight: 700; background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                                                ${day}
+                                            </h3>
+                                            <button type="button" class="btn btn-primary" onclick="addManagerToDay(${index})" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                                ➕ Добавить менеджера
+                                            </button>
+                                        </div>
+                                        <div id="managers-list-${index}" class="managers-list">
+                                            ${dayAssignments.length > 0 ? dayAssignments.map(assignment => {
+                                                const manager = allManagers.find(m => m.id === assignment.manager_id);
+                                                const startTime = assignment.start_time ? assignment.start_time.substring(0, 5) : '09:00';
+                                                const endTime = assignment.end_time ? assignment.end_time.substring(0, 5) : '18:00';
+                                                return `
+                                                    <div class="manager-assignment" style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: hsl(var(--muted) / 0.3); border-radius: calc(var(--radius)); margin-bottom: 0.75rem;">
+                                                        <div style="flex: 1;">
+                                                            <div style="font-weight: 600; margin-bottom: 0.25rem;">${manager ? manager.username : 'Неизвестный'}</div>
+                                                            <div style="font-size: 0.875rem; color: hsl(var(--muted-foreground));">
+                                                                <input type="time" id="start-${index}-${assignment.id}" value="${startTime}" class="form-input" style="width: 120px; display: inline-block; padding: 0.5rem;" onchange="updateManagerTime(${index}, ${assignment.id})">
+                                                                <span style="margin: 0 0.5rem;">-</span>
+                                                                <input type="time" id="end-${index}-${assignment.id}" value="${endTime}" class="form-input" style="width: 120px; display: inline-block; padding: 0.5rem;" onchange="updateManagerTime(${index}, ${assignment.id})">
+                                                            </div>
+                                                        </div>
+                                                        <button type="button" class="btn btn-danger" onclick="removeManagerFromDay(${index}, ${assignment.id})" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                                            🗑️ Удалить
+                                                        </button>
+                                                    </div>
+                                                `;
+                                            }).join('') : `
+                                                <div style="text-align: center; padding: 2rem; color: hsl(var(--muted-foreground)); background: hsl(var(--muted) / 0.2); border-radius: calc(var(--radius));">
+                                                    Нет назначенных менеджеров
+                                                </div>
+                                            `}
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                        <div style="display: flex; gap: 0.75rem; margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid hsl(var(--border));">
+                            <button type="button" class="btn btn-primary" onclick="saveAllSchedules()" style="flex: 1; font-size: 1rem; padding: 1rem;">💾 Сохранить все изменения</button>
+                            <button type="button" class="btn" onclick="closeScheduleModal()" style="flex: 1; font-size: 1rem; padding: 1rem;">❌ Закрыть</button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                
+                // Сохраняем данные для использования в функциях
+                window.scheduleModalData = {
+                    allManagers: allManagers,
+                    allAssignments: allAssignments,
+                    daysOfWeek: daysOfWeek
+                };
+                
+                // Закрытие при клике вне модального окна
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        closeScheduleModal();
+                    }
+                });
+            } catch (error) {
+                console.error('Ошибка:', error);
+                alert('Ошибка загрузки графика работы');
+            }
+        }
+
+        // Добавление менеджера на день
+        async function addManagerToDay(dayOfWeek) {
+            const data = window.scheduleModalData;
+            if (!data) return;
+            
+            // Создаем модальное окно для выбора менеджера
+            const selectModal = document.createElement('div');
+            selectModal.className = 'modal active';
+            selectModal.style.zIndex = '10002';
+            selectModal.innerHTML = `
+                <div class="modal-content" style="max-width: 500px;">
+                    <h2>➕ Добавить менеджера на ${data.daysOfWeek[dayOfWeek]}</h2>
+                    <div style="margin-bottom: 1.5rem;">
+                        <label class="form-label">Выберите менеджера</label>
+                        <select id="manager-select" class="form-input" style="width: 100%; padding: 1rem;">
+                            <option value="">-- Выберите менеджера --</option>
+                            ${data.allManagers.filter(m => m.is_active).map(m => `
+                                <option value="${m.id}">${m.username} (${m.email})</option>
+                            `).join('')}
+                        </select>
+                    </div>
+                    <div style="margin-bottom: 1.5rem;">
+                        <label class="form-label">Время начала работы</label>
+                        <input type="time" id="new-start-time" class="form-input" value="09:00" style="width: 100%; padding: 1rem;">
+                    </div>
+                    <div style="margin-bottom: 1.5rem;">
+                        <label class="form-label">Время окончания работы</label>
+                        <input type="time" id="new-end-time" class="form-input" value="18:00" style="width: 100%; padding: 1rem;">
+                    </div>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button type="button" class="btn btn-primary" onclick="confirmAddManager(${dayOfWeek})" style="flex: 1; padding: 1rem;">✅ Добавить</button>
+                        <button type="button" class="btn" onclick="closeSelectModal()" style="flex: 1; padding: 1rem;">❌ Отмена</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(selectModal);
+            window.currentSelectModal = selectModal;
+            window.currentDayOfWeek = dayOfWeek;
+        }
+
+        async function confirmAddManager(dayOfWeek) {
+            const managerId = parseInt(document.getElementById('manager-select').value);
+            const startTime = document.getElementById('new-start-time').value;
+            const endTime = document.getElementById('new-end-time').value;
+            
+            if (!managerId) {
+                alert('Выберите менеджера');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/day-managers', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        day_of_week: dayOfWeek,
+                        manager_id: managerId,
+                        start_time: startTime,
+                        end_time: endTime
+                    })
+                });
+                
+                if (response.ok) {
+                    closeSelectModal();
+                    // Перезагружаем данные графика
+                    await reloadScheduleModal();
+                } else {
+                    const error = await response.json();
+                    alert('Ошибка: ' + (error.error || 'Не удалось добавить менеджера'));
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                alert('Ошибка добавления менеджера');
+            }
+        }
+
+        async function updateManagerTime(dayOfWeek, assignmentId) {
+            const startTime = document.getElementById(`start-${dayOfWeek}-${assignmentId}`).value;
+            const endTime = document.getElementById(`end-${dayOfWeek}-${assignmentId}`).value;
+            
+            const assignment = window.scheduleModalData.allAssignments.find(a => a.id === assignmentId);
+            if (!assignment) return;
+            
+            try {
+                const response = await fetch('/api/day-managers', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        day_of_week: dayOfWeek,
+                        manager_id: assignment.manager_id,
+                        start_time: startTime,
+                        end_time: endTime
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    alert('Ошибка: ' + (error.error || 'Не удалось обновить время'));
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                alert('Ошибка обновления времени');
+            }
+        }
+
+        async function removeManagerFromDay(dayOfWeek, assignmentId) {
+            if (!confirm('Удалить этого менеджера из графика на этот день?')) return;
+            
+            try {
+                const response = await fetch(`/api/day-managers/${assignmentId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    // Перезагружаем данные графика
+                    await reloadScheduleModal();
+                } else {
+                    const error = await response.json();
+                    alert('Ошибка: ' + (error.error || 'Не удалось удалить менеджера'));
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                alert('Ошибка удаления менеджера');
+            }
+        }
+
+        function closeSelectModal() {
+            if (window.currentSelectModal) {
+                window.currentSelectModal.remove();
+                window.currentSelectModal = null;
+            }
+        }
+
+        async function saveAllSchedules() {
+            showNotification('✅ Все изменения сохранены автоматически', 'success');
+            closeScheduleModal();
+        }
+
+        // Просмотр общего графика работы
+        async function viewGeneralSchedule() {
+            await viewWorkSchedule(0, 'Общий график работы');
+        }
+
+        // Перезагрузка модального окна графика
+        async function reloadScheduleModal() {
+            const modal = document.getElementById('schedule-modal');
+            if (!modal) return;
+            
+            try {
+                // Загружаем обновленные данные
+                const managersResponse = await fetch('/api/managers/list');
+                const allManagers = await managersResponse.json();
+                
+                const assignmentsResponse = await fetch('/api/day-managers');
+                const allAssignments = assignmentsResponse.ok ? await assignmentsResponse.json() : [];
+                
+                const daysOfWeek = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
+                
+                // Обновляем содержимое формы
+                const form = document.getElementById('schedule-form');
+                if (form) {
+                    form.innerHTML = daysOfWeek.map((day, index) => {
+                        const dayAssignments = allAssignments.filter(a => a.day_of_week === index);
+                        
+                        return `
+                            <div class="day-schedule-card" style="margin-bottom: 1.5rem; padding: 1.5rem; background: hsl(var(--card)); border: 2px solid hsl(var(--border)); border-radius: calc(var(--radius) + 4px);">
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                                    <h3 style="margin: 0; font-size: 1.25rem; font-weight: 700; background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                                        ${day}
+                                    </h3>
+                                    <button type="button" class="btn btn-primary" onclick="addManagerToDay(${index})" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                        ➕ Добавить менеджера
+                                    </button>
+                                </div>
+                                <div id="managers-list-${index}" class="managers-list">
+                                    ${dayAssignments.length > 0 ? dayAssignments.map(assignment => {
+                                        const manager = allManagers.find(m => m.id === assignment.manager_id);
+                                        const startTime = assignment.start_time ? assignment.start_time.substring(0, 5) : '09:00';
+                                        const endTime = assignment.end_time ? assignment.end_time.substring(0, 5) : '18:00';
+                                        return `
+                                            <div class="manager-assignment" style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: hsl(var(--muted) / 0.3); border-radius: calc(var(--radius)); margin-bottom: 0.75rem;">
+                                                <div style="flex: 1;">
+                                                    <div style="font-weight: 600; margin-bottom: 0.25rem;">${manager ? manager.username : 'Неизвестный'}</div>
+                                                    <div style="font-size: 0.875rem; color: hsl(var(--muted-foreground));">
+                                                        <input type="time" id="start-${index}-${assignment.id}" value="${startTime}" class="form-input" style="width: 120px; display: inline-block; padding: 0.5rem;" onchange="updateManagerTime(${index}, ${assignment.id})">
+                                                        <span style="margin: 0 0.5rem;">-</span>
+                                                        <input type="time" id="end-${index}-${assignment.id}" value="${endTime}" class="form-input" style="width: 120px; display: inline-block; padding: 0.5rem;" onchange="updateManagerTime(${index}, ${assignment.id})">
+                                                    </div>
+                                                </div>
+                                                <button type="button" class="btn btn-danger" onclick="removeManagerFromDay(${index}, ${assignment.id})" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                                    🗑️ Удалить
+                                                </button>
+                                            </div>
+                                        `;
+                                    }).join('') : `
+                                        <div style="text-align: center; padding: 2rem; color: hsl(var(--muted-foreground)); background: hsl(var(--muted) / 0.2); border-radius: calc(var(--radius));">
+                                            Нет назначенных менеджеров
+                                        </div>
+                                    `}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+                
+                // Обновляем данные
+                window.scheduleModalData = {
+                    allManagers: allManagers,
+                    allAssignments: allAssignments,
+                    daysOfWeek: daysOfWeek
+                };
+                
+                showNotification('✅ Изменения сохранены', 'success');
+            } catch (error) {
+                console.error('Ошибка перезагрузки:', error);
+                alert('Ошибка обновления данных');
+            }
+        }
+
+        function toggleWorkingDay(dayIndex) {
+            const checkbox = document.getElementById(`day-${dayIndex}`);
+            const startInput = document.getElementById(`start-${dayIndex}`);
+            const endInput = document.getElementById(`end-${dayIndex}`);
+            
+            startInput.disabled = !checkbox.checked;
+            endInput.disabled = !checkbox.checked;
+        }
+
+        async function saveWorkSchedule(userId) {
+            const daysOfWeek = [0, 1, 2, 3, 4, 5, 6];
+            const schedules = daysOfWeek.map(dayIndex => {
+                const checkbox = document.getElementById(`day-${dayIndex}`);
+                const isWorking = checkbox.checked;
+                const startTime = document.getElementById(`start-${dayIndex}`).value;
+                const endTime = document.getElementById(`end-${dayIndex}`).value;
+                
+                return {
+                    day_of_week: dayIndex,
+                    is_working_day: isWorking,
+                    start_time: isWorking ? startTime : null,
+                    end_time: isWorking ? endTime : null
+                };
+            });
+
+            try {
+                const response = await fetch('/api/work-schedules/bulk', {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        user_id: userId,
+                        schedules: schedules
+                    })
+                });
+
+                if (response.ok) {
+                    showNotification('✅ График работы успешно сохранен', 'success');
+                    closeScheduleModal();
+                } else {
+                    const error = await response.json();
+                    alert('Ошибка: ' + (error.error || 'Не удалось сохранить график'));
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                alert('Ошибка сохранения графика работы');
+            }
+        }
+
+        function closeScheduleModal() {
+            const modal = document.getElementById('schedule-modal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // Закрытие модального окна
+        function closeManagerModal() {
+            document.getElementById('manager-modal').classList.remove('active');
+            document.getElementById('manager-password').required = true;
+            document.getElementById('manager-password').placeholder = 'Минимум 6 символов';
+        }
+
+        // Показ уведомления
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 10000;
+                padding: 1rem 1.5rem;
+                border-radius: calc(var(--radius));
+                box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+                animation: slideInRight 0.3s ease-out;
+                max-width: 400px;
+                background: hsl(var(--card));
+                border: 1px solid hsl(var(--border));
+                color: hsl(var(--foreground));
+                font-weight: 600;
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'fadeOut 0.3s ease-out';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Закрытие модального окна при клике вне его
+        document.getElementById('manager-modal')?.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeManagerModal();
+            }
+        });
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            loadManagers();
+        });
+    </script>
+</body>
+</html>
+

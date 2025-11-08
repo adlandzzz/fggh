@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TBGSOSAT CRM - Вход</title>
+    <link rel="stylesheet" href="/css/old-style.css">
+    <style>
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, hsl(214, 25%, 11%) 0%, hsl(214, 22%, 14%) 50%, hsl(217, 91%, 60%) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
+            animation: pulse 6s ease-in-out infinite;
+        }
+
+        .login-card {
+            background: hsl(var(--card) / 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid hsl(var(--border) / 0.5);
+            border-radius: calc(var(--radius) + 8px);
+            padding: 3rem;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+            position: relative;
+            z-index: 1;
+            transition: all 0.3s ease;
+        }
+
+        .login-card:hover {
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1);
+            transform: translateY(-4px);
+        }
+
+        .login-logo {
+            text-align: center;
+            margin-bottom: 2.5rem;
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        .login-subtitle {
+            text-align: center;
+            color: hsl(var(--muted-foreground));
+            font-size: 0.875rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.75rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.75rem;
+            color: hsl(var(--foreground));
+            font-weight: 600;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-label-icon {
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: hsl(var(--primary) / 0.1);
+            border-radius: 4px;
+            color: hsl(var(--primary));
+            font-size: 0.75rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            background: hsl(var(--input));
+            border: 2px solid hsl(var(--border));
+            border-radius: calc(var(--radius));
+            color: hsl(var(--foreground));
+            font-size: 1rem;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-sizing: border-box;
+        }
+
+        .form-input:hover {
+            border-color: hsl(var(--border) / 1.2);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: hsl(var(--primary));
+            box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            background: hsl(var(--input) / 1.1);
+        }
+
+        .form-input::placeholder {
+            color: hsl(var(--muted-foreground) / 0.6);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 1rem 2rem;
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            border-radius: calc(var(--radius));
+            font-size: 1.125rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            position: relative;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .login-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .login-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, hsl(var(--destructive) / 0.15), hsl(var(--destructive) / 0.1));
+            color: hsl(var(--destructive));
+            padding: 1rem 1.25rem;
+            border-radius: calc(var(--radius));
+            margin-bottom: 1.5rem;
+            text-align: center;
+            border: 1px solid hsl(var(--destructive) / 0.3);
+            font-weight: 500;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .test-accounts {
+            margin-top: 2rem;
+            padding: 1.25rem;
+            background: hsl(var(--muted) / 0.5);
+            border: 1px solid hsl(var(--border));
+            border-radius: calc(var(--radius));
+            font-size: 0.875rem;
+            color: hsl(var(--muted-foreground));
+            line-height: 1.8;
+        }
+
+        .test-accounts strong {
+            color: hsl(var(--foreground));
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9375rem;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.05); }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-logo">TBGSOSAT CRM</div>
+            <div class="login-subtitle">Система управления клиентскими отношениями</div>
+
+            {% if error %}
+            <div class="error-message">
+                ⚠️ {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="POST">
+                <div class="form-group">
+                    <label class="form-label">
+                        <span class="form-label-icon">📧</span>
+                        Email
+                    </label>
+                    <input type="email" name="email" class="form-input" placeholder="your@email.com" required autocomplete="email">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <span class="form-label-icon">🔒</span>
+                        Пароль
+                    </label>
+                    <input type="password" name="password" class="form-input" placeholder="••••••••" required autocomplete="current-password">
+                </div>
+
+                <button type="submit" class="login-btn">
+                    🚀 Войти в систему
+                </button>
+            </form>
+
+            <div class="test-accounts">
+                <strong>🔑 Тестовые аккаунты:</strong>
+                <div style="margin-top: 0.75rem;">
+                    <div><strong>Админ:</strong> admin@tbgsosat.com / admin123</div>
+                    <div><strong>Менеджер:</strong> dannnnnbb@gmail.com / manager123</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

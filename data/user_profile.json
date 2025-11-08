@@ -1,0 +1,15 @@
+{
+  "id": 176,
+  "username": "Адлан Джабраилов ",
+  "email": "dannnnnbb@gmail.com",
+  "role": "manager",
+  "is_active": true,
+  "is_invited": false,
+  "settings": {
+    "darkTheme": true,
+    "newChatNotifications": true,
+    "pushNotifications": true
+  },
+  "created_at": "0001-01-01T00:00:00Z",
+  "updated_at": "0001-01-01T00:00:00Z"
+}

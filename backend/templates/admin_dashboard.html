@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TBGSOSAT CRM - Админ панель</title>
+    <link rel="stylesheet" href="/css/old-style.css">
+    <style>
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .dashboard-header h1 {
+            font-size: 1.75rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0;
+        }
+
+        .welcome-card {
+            background: var(--gradient-primary);
+            color: white;
+            padding: 1.25rem 1.5rem;
+            border-radius: calc(var(--radius) + 4px);
+            margin-bottom: 1rem;
+            box-shadow: 0 8px 20px -5px rgba(59, 130, 246, 0.3), 0 4px 8px -2px rgba(59, 130, 246, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .welcome-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        .welcome-card h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.375rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .welcome-card p {
+            font-size: 0.875rem;
+            opacity: 0.95;
+            position: relative;
+            z-index: 1;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-card {
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: calc(var(--radius) + 2px);
+            padding: 1rem;
+            text-align: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.08), 0 1px 1px 0 rgba(0, 0, 0, 0.04);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-primary);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: hsl(var(--primary) / 0.5);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .stat-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .stat-icon {
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+        }
+
+        .stat-value {
+            font-size: 1.875rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.375rem;
+            line-height: 1;
+        }
+
+        .stat-label {
+            color: hsl(var(--muted-foreground));
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .admin-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.75rem;
+            margin: 1rem 0;
+        }
+
+        .action-card {
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: calc(var(--radius) + 2px);
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .action-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-primary);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease;
+        }
+
+        .action-card:hover {
+            border-color: hsl(var(--primary) / 0.5);
+            transform: translateY(-6px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .action-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .action-card-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            display: block;
+            transition: transform 0.3s ease;
+        }
+
+        .action-card:hover .action-card-icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .action-card-title {
+            font-weight: 700;
+            font-size: 0.9375rem;
+            margin-bottom: 0.375rem;
+            color: hsl(var(--foreground));
+        }
+
+        .action-card-desc {
+            font-size: 0.75rem;
+            color: hsl(var(--muted-foreground));
+        }
+
+        .card {
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: calc(var(--radius) + 4px);
+            padding: 1rem;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.08), 0 1px 1px 0 rgba(0, 0, 0, 0.04);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 8px -2px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid hsl(var(--border));
+        }
+
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: hsl(var(--foreground));
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 0.8; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="/admin/dashboard" class="logo">TBGSOSAT CRM ADMIN</a>
+                <nav class="nav">
+                    <span style="color: var(--muted-foreground);">👑 {{ user.username }}</span>
+                    <a href="/admin/dashboard" class="nav-link active">📊 Дашборд</a>
+                    <a href="/chats" class="nav-link">💬 Чаты</a>
+                    <a href="/shops" class="nav-link">🏪 Магазины</a>
+                    <a href="/managers" class="nav-link">👥 Менеджеры</a>
+                    <a href="/deliveries" class="nav-link">🚚 Доставки</a>
+                    <a href="/deliveries/manage" class="nav-link">⚙️ Управление доставками</a>
+                    <a href="/analytics" class="nav-link">📊 Аналитика</a>
+                    <a href="/settings" class="nav-link">⚙️ Настройки</a>
+                    <a href="/logout" class="nav-link">🚪 Выход</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="dashboard-header">
+                <div>
+                    <h1>👑 Панель администратора</h1>
+                    <p style="color: hsl(var(--muted-foreground)); margin-top: 0.5rem;">Полный доступ ко всем функциям системы</p>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; background: hsl(var(--primary) / 0.1); border-radius: calc(var(--radius)); border: 1px solid hsl(var(--primary) / 0.3);">
+                    <span style="font-size: 1.25rem;">👑</span>
+                    <span style="font-weight: 600; color: hsl(var(--primary));">Администратор</span>
+                </div>
+            </div>
+
+            <div class="welcome-card">
+                <h2>Добро пожаловать, {{ user.username }}!</h2>
+                <p>У вас есть полный доступ ко всем функциям системы</p>
+            </div>
+
+            <!-- Статистика -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-value">{{ stats.total_users }}</div>
+                    <div class="stat-label">Пользователей</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">👨‍💼</div>
+                    <div class="stat-value">{{ stats.total_managers }}</div>
+                    <div class="stat-label">Менеджеров</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🏪</div>
+                    <div class="stat-value">{{ stats.total_shops }}</div>
+                    <div class="stat-label">Магазинов</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💬</div>
+                    <div class="stat-value">{{ stats.total_chats }}</div>
+                    <div class="stat-label">Всего чатов</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🔥</div>
+                    <div class="stat-value">{{ stats.urgent_chats }}</div>
+                    <div class="stat-label">Срочные чаты</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🟢</div>
+                    <div class="stat-value">{{ stats.active_chats }}</div>
+                    <div class="stat-label">Активные чаты</div>
+                </div>
+            </div>
+
+            <!-- Быстрые действия -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">🚀 Быстрые действия</h2>
+                </div>
+                <div class="admin-actions">
+                    <div class="action-card" onclick="location.href='/chats'">
+                        <span class="action-card-icon">💬</span>
+                        <div class="action-card-title">Чаты</div>
+                        <div class="action-card-desc">Управление чатами и общение с клиентами</div>
+                    </div>
+                    <div class="action-card" onclick="location.href='/shops'">
+                        <span class="action-card-icon">🏪</span>
+                        <div class="action-card-title">Магазины Авито</div>
+                        <div class="action-card-desc">Добавление магазинов и управление API ключами</div>
+                    </div>
+                    <div class="action-card" onclick="location.href='/analytics'">
+                        <span class="action-card-icon">📊</span>
+                        <div class="action-card-title">Аналитика KPI</div>
+                        <div class="action-card-desc">Статистика, показатели и аналитика</div>
+                    </div>
+                    <div class="action-card" onclick="location.href='/deliveries'">
+                        <span class="action-card-icon">🚚</span>
+                        <div class="action-card-title">Доставки</div>
+                        <div class="action-card-desc">Отслеживание и управление доставками</div>
+                    </div>
+                    <div class="action-card" onclick="location.href='/managers'">
+                        <span class="action-card-icon">👥</span>
+                        <div class="action-card-title">Менеджеры</div>
+                        <div class="action-card-desc">Управление менеджерами и отслеживание действий</div>
+                    </div>
+                    <div class="action-card" onclick="location.href='/settings'">
+                        <span class="action-card-icon">⚙️</span>
+                        <div class="action-card-title">Настройки системы</div>
+                        <div class="action-card-desc">Конфигурация таймеров и уведомлений</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Отслеживание действий менеджеров -->
+            <div class="card" style="margin-top: 2rem;">
+                <div class="card-header">
+                    <h2 class="card-title">📊 Действия менеджеров</h2>
+                    <div style="display: flex; gap: 0.75rem; align-items: center;">
+                        <select id="manager-filter" onchange="loadActivityLogs()" style="padding: 0.5rem 1rem; border-radius: calc(var(--radius)); border: 1px solid hsl(var(--border)); background: hsl(var(--card)); color: hsl(var(--foreground)); font-size: 0.875rem;">
+                            <option value="">Все менеджеры</option>
+                        </select>
+                        <button class="btn" onclick="loadActivityLogs()" style="font-size: 0.875rem; padding: 0.5rem 1rem;">🔄 Обновить</button>
+                    </div>
+                </div>
+                <div id="activity-logs" style="max-height: 500px; overflow-y: auto;">
+                    <div style="text-align: center; padding: 2rem; color: hsl(var(--muted-foreground));">Загрузка...</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let managersList = [];
+
+        // Загрузка списка менеджеров
+        async function loadManagersList() {
+            try {
+                const response = await fetch('/api/managers/list');
+                managersList = await response.json();
+                const filter = document.getElementById('manager-filter');
+                if (filter) {
+                    filter.innerHTML = '<option value="">Все менеджеры</option>' + 
+                        managersList.map(m => `<option value="${m.id}">${m.username}</option>`).join('');
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки списка менеджеров:', error);
+            }
+        }
+
+        // Загрузка логов действий
+        async function loadActivityLogs() {
+            try {
+                const managerId = document.getElementById('manager-filter')?.value || '';
+                const url = managerId ? `/api/activity-logs?limit=50&manager_id=${managerId}` : '/api/activity-logs?limit=50';
+                const response = await fetch(url);
+                const logs = await response.json();
+                
+                const container = document.getElementById('activity-logs');
+                
+                if (logs.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; padding: 2rem; color: hsl(var(--muted-foreground));">Нет действий для отображения</div>';
+                    return;
+                }
+
+                container.innerHTML = logs.map(log => {
+                    const time = new Date(log.created_at).toLocaleString('ru-RU');
+                    const actionIcon = getActionIcon(log.action_type);
+                    
+                    return `
+                        <div style="padding: 1rem; border-bottom: 1px solid hsl(var(--border)); display: flex; align-items: start; gap: 1rem; transition: background 0.2s;" 
+                             onmouseover="this.style.background='hsl(var(--muted) / 0.3)'" 
+                             onmouseout="this.style.background='transparent'">
+                            <div style="font-size: 1.5rem; flex-shrink: 0;">${actionIcon}</div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; margin-bottom: 0.25rem; color: hsl(var(--foreground));">
+                                    ${log.username || 'Неизвестный пользователь'}
+                                </div>
+                                <div style="font-size: 0.875rem; color: hsl(var(--muted-foreground)); margin-bottom: 0.25rem;">
+                                    ${log.action_description || log.action_type}
+                                </div>
+                                <div style="font-size: 0.75rem; color: hsl(var(--muted-foreground) / 0.7);">
+                                    ${time}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Ошибка загрузки логов:', error);
+                document.getElementById('activity-logs').innerHTML = 
+                    '<div style="text-align: center; padding: 2rem; color: hsl(var(--destructive));">Ошибка загрузки логов</div>';
+            }
+        }
+
+        // Получение иконки для типа действия
+        function getActionIcon(actionType) {
+            const icons = {
+                'login': '🔐',
+                'logout': '🚪',
+                'start_shift': '⏰',
+                'end_shift': '🏁',
+                'send_message': '💬',
+                'create_manager': '➕',
+                'update_manager': '✏️',
+                'delete_manager': '🗑️',
+                'create_penalty': '⚠️',
+                'open_chat': '💬',
+                'complete_chat': '✅'
+            };
+            return icons[actionType] || '📝';
+        }
+
+        // Автообновление логов каждые 30 секунд
+        setInterval(loadActivityLogs, 30000);
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadManagersList();
+            loadActivityLogs();
+        });
+    </script>
+</body>
+</html>

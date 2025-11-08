@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TBGSOSAT - Админ-панель</title>
+    <link rel="stylesheet" href="/css/old-style.css">
+    <style>
+        .admin-grid {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 2rem;
+            min-height: calc(100vh - 80px);
+        }
+        
+        .admin-sidebar {
+            background: var(--card);
+            border-right: 1px solid var(--border);
+            padding: 1.5rem;
+        }
+        
+        .admin-main {
+            padding: 1.5rem;
+        }
+        
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .sidebar-link {
+            padding: 0.75rem 1rem;
+            color: var(--muted-foreground);
+            text-decoration: none;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .sidebar-link:hover,
+        .sidebar-link.active {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .admin-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+        
+        .table-responsive {
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+        
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .admin-table th,
+        .admin-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .admin-table th {
+            background: var(--card);
+            color: var(--muted-foreground);
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+        
+        .admin-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.875rem;
+        }
+        
+        .section {
+            display: none;
+        }
+        
+        .section.active {
+            display: block;
+        }
+        
+        .activity-item {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: between;
+            align-items: center;
+        }
+        
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        
+        .search-box {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.75rem;
+            color: var(--foreground);
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="/" class="logo">TBGSOSAT ADMIN</a>
+                <nav class="nav">
+                    <a href="/" class="nav-link">🏠 Главная</a>
+                    <a href="/dashboard" class="nav-link">📊 Дашборд</a>
+                    <a href="/admin" class="nav-link active">⚙️ Админка</a>
+                    <a href="/api/user" class="nav-link">👤 Профиль</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="admin-grid">
+                <!-- Сайдбар -->
+                <aside class="admin-sidebar">
+                    <h3 style="margin-bottom: 1rem; color: var(--primary);">Панель управления</h3>
+                    <nav class="sidebar-nav">
+                        <a href="#dashboard" class="sidebar-link active">📊 Обзор</a>
+                        <a href="#users" class="sidebar-link">👥 Пользователи</a>
+                        <a href="#orders" class="sidebar-link">📦 Заказы</a>
+                        <a href="#activities" class="sidebar-link">📋 Активность</a>
+                        <a href="#settings" class="sidebar-link">⚙️ Настройки</a>
+                    </nav>
+                </aside>
+
+                <!-- Основной контент -->
+                <div class="admin-main">
+                    <!-- Раздел Обзор -->
+                    <div id="dashboard" class="section active">
+                        <div class="card-header" style="margin-bottom: 2rem;">
+                            <h1 class="card-title">📊 Обзор системы</h1>
+                        </div>
+
+                        <!-- Статистика -->
+                        <div class="stats-cards">
+                            <div class="admin-card">
+                                <div class="text-sm text-muted-foreground">Всего пользователей</div>
+                                <div class="stat-value" id="total-users">0</div>
+                            </div>
+                            <div class="admin-card">
+                                <div class="text-sm text-muted-foreground">Активных</div>
+                                <div class="stat-value" id="active-users">0</div>
+                            </div>
+                            <div class="admin-card">
+                                <div class="text-sm text-muted-foreground">Всего заказов</div>
+                                <div class="stat-value" id="total-orders">0</div>
+                            </div>
+                            <div class="admin-card">
+                                <div class="text-sm text-muted-foreground">Выручка</div>
+                                <div class="stat-value" id="revenue">0₽</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Раздел Пользователи -->
+                    <div id="users" class="section">
+                        <div class="card-header" style="margin-bottom: 2rem;">
+                            <h1 class="card-title">👥 Управление пользователями</h1>
+                            <button class="btn" onclick="showAddUserModal()">+ Добавить пользователя</button>
+                        </div>
+
+                        <input type="text" class="search-box" placeholder="🔍 Поиск пользователей..." id="user-search">
+
+                        <div class="admin-card">
+                            <div class="table-responsive">
+                                <table class="admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Пользователь</th>
+                                            <th>Email</th>
+                                            <th>Роль</th>
+                                            <th>Статус</th>
+                                            <th>Дата регистрации</th>
+                                            <th>Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="users-table-body">
+                                        <!-- Данные загружаются через JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Раздел Активность -->
+                    <div id="activities" class="section">
+                        <div class="card-header" style="margin-bottom: 2rem;">
+                            <h1 class="card-title">📋 Журнал активности</h1>
+                        </div>
+
+                        <div class="admin-card">
+                            <div id="activities-list">
+                                <!-- Активности загружаются через JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Переключение между разделами
+        document.querySelectorAll('.sidebar-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Убираем активный класс
+                document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                
+                // Добавляем активный класс
+                this.classList.add('active');
+                const sectionId = this.getAttribute('href').substring(1);
+                document.getElementById(sectionId).classList.add('active');
+                
+                // Загружаем данные для раздела
+                loadSectionData(sectionId);
+            });
+        });
+
+        // Загрузка данных для разделов
+        async function loadSectionData(section) {
+            switch(section) {
+                case 'dashboard':
+                    await loadDashboardStats();
+                    break;
+                case 'users':
+                    await loadUsers();
+                    break;
+                case 'activities':
+                    await loadActivities();
+                    break;
+            }
+        }
+
+        // Загрузка статистики
+        async function loadDashboardStats() {
+            try {
+                const response = await fetch('/api/admin/stats');
+                const stats = await response.json();
+                
+                document.getElementById('total-users').textContent = stats.total_users;
+                document.getElementById('active-users').textContent = stats.active_users;
+                document.getElementById('total-orders').textContent = stats.total_orders;
+                document.getElementById('revenue').textContent = stats.revenue + '₽';
+            } catch (error) {
+                console.error('Ошибка загрузки статистики:', error);
+            }
+        }
+
+        // Загрузка пользователей
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/admin/users');
+                const users = await response.json();
+                
+                const tbody = document.getElementById('users-table-body');
+                tbody.innerHTML = users.map(user => `
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <div class="user-avatar">${user.username.charAt(0)}</div>
+                                <div>
+                                    <div style="font-weight: 600;">${user.username}</div>
+                                    <div class="text-sm text-muted-foreground">ID: ${user.id}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>${user.email}</td>
+                        <td>
+                            <span class="badge ${user.role === 'admin' ? 'badge-success' : 'badge-warning'}">${user.role}</span>
+                        </td>
+                        <td>
+                            <span class="badge ${user.is_active ? 'badge-success' : 'badge-error'}">
+                                ${user.is_active ? 'Активен' : 'Неактивен'}
+                            </span>
+                        </td>
+                        <td>${user.created_at}</td>
+                        <td>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="btn btn-outline" style="padding: 0.5rem;" onclick="editUser(${user.id})">✏️</button>
+                                <button class="btn btn-outline" style="padding: 0.5rem;" onclick="viewUser(${user.id})">👁️</button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Ошибка загрузки пользователей:', error);
+            }
+        }
+
+        // Загрузка активности
+        async function loadActivities() {
+            try {
+                const response = await fetch('/api/admin/activities');
+                const activities = await response.json();
+                
+                const container = document.getElementById('activities-list');
+                container.innerHTML = activities.map(activity => `
+                    <div class="activity-item">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600;">${activity.user}</div>
+                            <div class="text-sm text-muted-foreground">${activity.action}</div>
+                            <div class="text-sm text-muted-foreground">IP: ${activity.ip}</div>
+                        </div>
+                        <div class="text-sm text-muted-foreground">${activity.timestamp}</div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Ошибка загрузки активности:', error);
+            }
+        }
+
+        // Вспомогательные функции
+        function showAddUserModal() {
+            alert('Форма добавления пользователя будет здесь');
+        }
+
+        function editUser(userId) {
+            alert(`Редактирование пользователя ID: ${userId}`);
+        }
+
+        function viewUser(userId) {
+            alert(`Просмотр пользователя ID: ${userId}`);
+        }
+
+        // Загрузка данных при старте
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboardStats();
+            console.log('🛠️ Админ-панель загружена');
+        });
+    </script>
+</body>
+</html>
